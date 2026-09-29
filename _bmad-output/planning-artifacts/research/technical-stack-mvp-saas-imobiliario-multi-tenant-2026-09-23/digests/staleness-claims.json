@@ -1,0 +1,16 @@
+{
+  "claims": [
+    {"claim": "Supabase Pro 25, Micro 10, credit 10", "class": "cost", "pub_date": "2026-09-23", "ref": 19},
+    {"claim": "Vercel Pro 20; Hobby non-commercial", "class": "cost", "pub_date": "2026-09-23", "ref": 20},
+    {"claim": "Trigger.dev 10 USD tier; no task timeouts", "class": "cost", "pub_date": "2026-09-23", "ref": 22},
+    {"claim": "Acquaint 50-tenant DB-per-tenant composite", "class": "cost", "pub_date": "2026-05-15", "ref": 9},
+    {"claim": "MarsDevs 40-120 per dedicated DB", "class": "cost", "pub_date": "2026-04-01", "ref": 12},
+    {"claim": "Trigger.dev dequeue incident", "class": "landscape", "pub_date": "2026-06-22", "ref": 24},
+    {"claim": "Faysal solo Django Celery SaaS", "class": "implementation", "pub_date": "2026-03-23", "ref": 23},
+    {"claim": "Nas schema-per-tenant migration pain", "class": "implementation", "pub_date": "2026-09-12", "ref": 11},
+    {"claim": "Tomoda RLS policy testing burden", "class": "implementation", "pub_date": "2026-06-24", "ref": 28},
+    {"claim": "ClickHouse shared-schema default", "class": "pattern", "pub_date": "2026-05-25", "ref": 3},
+    {"claim": "Postgres 18 RLS per table and FORCE", "class": "pattern", "pub_date": "2026-09-23", "ref": 13},
+    {"claim": "Vercel function duration caps", "class": "implementation", "pub_date": "2026-09-23", "ref": 32}
+  ]
+}
