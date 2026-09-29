@@ -2,6 +2,7 @@
 .agents/
 _bmad/
 _bmad-output/
+MVP/
 
 # Local Python
 .venv/
