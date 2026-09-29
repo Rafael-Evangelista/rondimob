@@ -27,6 +27,11 @@ header {
   align-items: center;
 }
 
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
 a {
   color: black;
 }

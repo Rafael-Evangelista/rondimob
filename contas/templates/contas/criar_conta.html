@@ -1,0 +1,58 @@
+{% extends "contas/base.html" %}
+
+{% block title %}Criar conta — rondimob{% endblock %}
+
+{% block content %}
+<main>
+  <h1>Criar conta</h1>
+  <form method="post" action="/criar-conta/">
+    {% csrf_token %}
+    <fieldset>
+      <legend>Tipo de conta</legend>
+      {{ form.tipo }}
+      {{ form.tipo.errors }}
+    </fieldset>
+    <p>
+      <label for="{{ form.nome.id_for_label }}">Nome</label>
+      {{ form.nome }}
+      {{ form.nome.errors }}
+    </p>
+    <p>
+      <label for="{{ form.razao_social.id_for_label }}">Razão social</label>
+      {{ form.razao_social }}
+      {{ form.razao_social.errors }}
+    </p>
+    <p>
+      <label for="{{ form.cnpj.id_for_label }}">CNPJ</label>
+      {{ form.cnpj }}
+      {{ form.cnpj.errors }}
+    </p>
+    <p>
+      <label for="{{ form.responsavel.id_for_label }}">Responsável</label>
+      {{ form.responsavel }}
+      {{ form.responsavel.errors }}
+    </p>
+    <p>
+      <label for="{{ form.creci.id_for_label }}">CRECI</label>
+      {{ form.creci }}
+      {{ form.creci.errors }}
+    </p>
+    <p>
+      <label for="{{ form.email.id_for_label }}">E-mail</label>
+      {{ form.email }}
+      {{ form.email.errors }}
+    </p>
+    <p>
+      <label for="{{ form.telefone.id_for_label }}">Telefone</label>
+      {{ form.telefone }}
+      {{ form.telefone.errors }}
+    </p>
+    <p>
+      <label for="{{ form.senha.id_for_label }}">Senha</label>
+      {{ form.senha }}
+      {{ form.senha.errors }}
+    </p>
+    <button type="submit">Criar conta</button>
+  </form>
+</main>
+{% endblock %}

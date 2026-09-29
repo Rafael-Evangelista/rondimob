@@ -7,6 +7,7 @@ from django.contrib.staticfiles.finders import find
 from django.test import SimpleTestCase
 from django.urls import reverse
 
+from config import settings as production_settings
 from config.settings import DEFAULT_DATABASE_URL, database_from_url
 
 PORTAL_COPY = (
@@ -81,7 +82,7 @@ class PortalTests(SimpleTestCase):
         self.assertNotIn("prefers-color-scheme: dark", css)
         self.assertNotRegex(css, r"color-scheme:\s*dark")
 
-        for path in ("/", "/entrar/"):
+        for path in ("/", "/entrar/", "/criar-conta/"):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, STYLESHEET)
@@ -91,9 +92,14 @@ class PortalTests(SimpleTestCase):
     def test_django_version_and_postgresql_engine(self):
         self.assertEqual(django.get_version(), "6.1.1")
         self.assertEqual(
-            settings.DATABASES["default"]["ENGINE"],
+            production_settings.DATABASES["default"]["ENGINE"],
             "django.db.backends.postgresql",
         )
+        self.assertEqual(
+            settings.DATABASES["default"]["ENGINE"],
+            "django.db.backends.sqlite3",
+        )
+        self.assertIn("memory", settings.DATABASES["default"]["NAME"])
         self.assertEqual(
             database_from_url(
                 "postgres://corret%6Fr:p%40ss@db.example:5432/rondimob/"
@@ -111,5 +117,5 @@ class PortalTests(SimpleTestCase):
             database_from_url("mysql://localhost/rondimob")
         used_url = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
         expected = database_from_url(used_url)
-        configured = settings.DATABASES["default"]
+        configured = production_settings.DATABASES["default"]
         self.assertEqual({key: configured[key] for key in expected}, expected)
