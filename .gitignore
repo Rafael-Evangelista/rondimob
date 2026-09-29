@@ -1,0 +1,11 @@
+# BMad tooling and specifications
+.agents/
+_bmad/
+_bmad-output/
+
+# Local Python
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.env

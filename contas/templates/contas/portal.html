@@ -1,0 +1,50 @@
+{% extends "contas/base.html" %}
+
+{% block title %}Produtos e planos — rondimob{% endblock %}
+
+{% block content %}
+<header>
+  <p>rondimob</p>
+  <a href="/entrar/">Área do cliente</a>
+</header>
+<main>
+  <h1>Preços do mercado imobiliário no ABCD, em um só lugar</h1>
+  <p>O rondimob monitora preços por região e imobiliárias concorrentes no ABCD, em um só lugar.</p>
+
+  <section aria-labelledby="produtos">
+    <h2 id="produtos">Produtos</h2>
+    <ul>
+      <li>Monitoramento de preços por região no ABCD</li>
+      <li>Monitoramento de imobiliárias concorrentes no ABCD</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="planos">
+    <h2 id="planos">Planos</h2>
+    <article>
+      <h3>Grátis</h3>
+      <p>R$ 0</p>
+      <p>10 pesquisas em 14 dias</p>
+    </article>
+    <article>
+      <h3>Padrão</h3>
+      <p>R$ 97 por mês</p>
+      <p>30 pesquisas</p>
+    </article>
+    <article>
+      <h3>Plus</h3>
+      <p>R$ 197 por mês</p>
+      <p>100 pesquisas</p>
+    </article>
+    <article>
+      <h3>Personalizado</h3>
+      <p>sob consulta</p>
+    </article>
+  </section>
+
+  <section aria-labelledby="pacote">
+    <h2 id="pacote">Pacote de créditos</h2>
+    <p>R$ 47 por 10 pesquisas</p>
+  </section>
+</main>
+{% endblock %}

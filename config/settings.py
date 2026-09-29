@@ -1,0 +1,81 @@
+"""Django settings for the rondimob public portal."""
+
+import os
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "dev-only-not-for-production",
+)
+
+DEBUG = os.environ.get("DJANGO_DEBUG", "true").strip().lower() in {"1", "true", "yes"}
+
+_allowed_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "").strip()
+if not _allowed_hosts:
+    _allowed_hosts = "localhost,127.0.0.1,testserver"
+ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(",") if host.strip()]
+
+INSTALLED_APPS = [
+    "django.contrib.staticfiles",
+    "contas",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+
+DEFAULT_DATABASE_URL = "postgresql://localhost/rondimob"
+
+
+def database_from_url(url):
+    """Map a PostgreSQL URL to Django's DATABASES entry."""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        raise ValueError("DATABASE_URL must use the postgres or postgresql scheme")
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(parsed.path).strip("/"),
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": parsed.hostname or "",
+        "PORT": "" if parsed.port is None else str(parsed.port),
+    }
+
+
+DATABASES = {
+    "default": database_from_url(os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)),
+}
+
+LANGUAGE_CODE = "pt-br"
+
+TIME_ZONE = "America/Sao_Paulo"
+
+USE_I18N = True
+
+USE_TZ = True
+
+STATIC_URL = "static/"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

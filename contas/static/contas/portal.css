@@ -1,0 +1,43 @@
+:root {
+  color-scheme: light only;
+}
+
+html,
+body {
+  background: white;
+  color: black;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+header,
+main {
+  margin: 0 auto;
+  max-width: 52rem;
+  padding: 1.5rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+a {
+  color: black;
+}
+
+section {
+  margin-top: 2rem;
+}
+
+article {
+  background: whitesmoke;
+  border: 1px solid gainsboro;
+  margin-top: 1rem;
+  padding: 1rem;
+}
