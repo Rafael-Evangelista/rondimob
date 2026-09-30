@@ -183,3 +183,45 @@ class CriarContaForm(forms.Form):
             cnpj=dados.get("cnpj") or "",
             responsavel=dados.get("responsavel") or "",
         )
+
+
+class EntrarForm(forms.Form):
+    email = forms.EmailField(label="E-mail", max_length=254)
+    senha = forms.CharField(
+        label="Senha",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+
+    def clean_email(self):
+        return normalizar_email(self.cleaned_data.get("email"))
+
+
+class RecuperarSenhaForm(forms.Form):
+    email = forms.EmailField(label="E-mail", max_length=254)
+
+    def clean_email(self):
+        return normalizar_email(self.cleaned_data.get("email"))
+
+
+class DefinirSenhaForm(forms.Form):
+    senha = forms.CharField(
+        label="Senha",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        error_messages={"required": "Informe a senha."},
+    )
+
+    def __init__(self, conta, *args, **kwargs):
+        self.conta = conta
+        super().__init__(*args, **kwargs)
+
+    def clean_senha(self):
+        senha = self.cleaned_data["senha"]
+        validate_password(senha, self.conta)
+        return senha
+
+    def save(self):
+        self.conta.set_password(self.cleaned_data["senha"])
+        self.conta.save(update_fields=["password"])
+        return self.conta

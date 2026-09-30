@@ -1,11 +1,26 @@
 {% extends "contas/base.html" %}
 
-{% block title %}Área do cliente — rondimob{% endblock %}
+{% block title %}Entrar — rondimob{% endblock %}
 
 {% block content %}
 <main>
-  <h1>Área do cliente</h1>
-  <p>A área do cliente fica neste site.</p>
-  <p>O acesso vai pedir e-mail e senha.</p>
+  <h1>Entrar</h1>
+  <form method="post" action="/entrar/">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <p>
+      <label for="{{ form.email.id_for_label }}">E-mail</label>
+      {{ form.email }}
+      {{ form.email.errors }}
+    </p>
+    <p>
+      <label for="{{ form.senha.id_for_label }}">Senha</label>
+      {{ form.senha }}
+      {{ form.senha.errors }}
+    </p>
+    <button type="submit">Entrar</button>
+  </form>
+  <p><a href="/criar-conta/">Criar conta</a></p>
+  <p><a href="/recuperar-senha/">Esqueci a senha</a></p>
 </main>
 {% endblock %}
