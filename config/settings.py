@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "contas",
     "radares",
+    "anuncios",
+    "coleta",
 ]
 
 MIDDLEWARE = [
@@ -133,3 +135,6 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_TASK_ROUTES = {
+    "coleta.tasks.coletar_zap": {"queue": "zap"},
+}

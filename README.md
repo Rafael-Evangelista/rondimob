@@ -70,9 +70,11 @@ In another terminal, from this repository. The worker connects as `rondimob_work
 uv run celery -A config worker --loglevel=info
 ```
 
+The ZAP task `coleta.tasks.coletar_zap` uses the queue `zap`. With no payload argument it reads `coleta/fixtures/zap-exemplo.json` and upserts that recorded listing. It does not call ZAP, Viva Real, OLX, or any other site. Live access waits until Rafael chooses how ZAP may be read.
+
 ## Tests
 
-`uv run pytest` loads `config.test_settings`, an in-memory SQLite overlay. It covers the portal, signup, session, free-trial pages, plan activation, credit reload, and creating a radar. PostgreSQL is not required, and neither is Redis. Isolation tests are skipped, including the free-search counter, the plan, the credit balance, and the radar. The account-context helper does not call `set_config` on SQLite. The application engine in `config.settings` stays PostgreSQL. Pytest mocks the Celery `delay` call and runs the task function directly.
+`uv run pytest` loads `config.test_settings`, an in-memory SQLite overlay. It covers the portal, signup, session, free-trial pages, plan activation, credit reload, creating a radar, and storing a recorded ZAP payload. PostgreSQL is not required, and neither is Redis. Isolation tests are skipped, including the free-search counter, the plan, the credit balance, and the radar. The account-context helper does not call `set_config` on SQLite. The application engine in `config.settings` stays PostgreSQL. Pytest mocks the Celery `delay` call and runs the task function directly. The ZAP tests call `coletar_zap` in process with the fixture file. They do not open the broker and they do not call the site.
 
 `uv run pytest --ds config.postgres_settings` runs the same suite, including isolation, against the local PostgreSQL server. It needs the `rondimob` database and the owner role from the install steps. The Django connection for that command is the table owner. The isolation tests also connect as `rondimob_web` and `rondimob_worker` and check that one account cannot read the other. The free-search counter check, the plan check, the credit check, and the radar check connect as `rondimob_web`.
 

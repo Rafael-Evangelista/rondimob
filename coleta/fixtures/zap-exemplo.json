@@ -1,0 +1,16 @@
+{
+  "id": "zap-exemplo-1",
+  "url": "https://exemplo.invalid/anuncio/zap-exemplo-1",
+  "preco": "R$ 650.000",
+  "area": 60,
+  "quartos": 2,
+  "banheiros": 1,
+  "vagas": 1,
+  "cidade": "  Santo André  ",
+  "bairro": " Centro ",
+  "tipo": " Apartamento ",
+  "imobiliaria": " Imobiliária Alfa ",
+  "titulo": "Apartamento no Centro",
+  "endereco": "Rua Exemplo, 10",
+  "descricao": "Anúncio gravado a partir do arquivo de exemplo."
+}
