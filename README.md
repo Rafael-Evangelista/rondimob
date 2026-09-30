@@ -38,7 +38,7 @@ Open `http://localhost:8000/`. Signup is at `http://localhost:8000/criar-conta/`
 
 ## Redis and the worker
 
-Password recovery does not send mail. `POST /recuperar-senha/` enqueues a Celery task. The broker is `redis://localhost:6379/0`. The worker logs the reset link to stdout.
+Password recovery does not send mail. No email is sent. `POST /recuperar-senha/` enqueues a Celery task. The broker is `redis://localhost:6379/0`. The worker logs one line to stdout, a path with no host. That line is the only copy of the link, and it is the reset credential until the password changes. Open it on the same site: `http://localhost:8000` plus the path.
 
 Debian or Ubuntu:
 

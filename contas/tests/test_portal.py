@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import celery
@@ -124,4 +126,31 @@ class PortalTests(SimpleTestCase):
         self.assertEqual(
             production_settings.CELERY_BROKER_URL,
             "redis://localhost:6379/0",
+        )
+
+    def test_celery_autodiscovers_the_recovery_task(self):
+        import redis
+
+        self.assertIsNotNone(redis)
+        codigo = "\n".join(
+            [
+                "from config.celery import app",
+                "app.loader.import_default_modules()",
+                "assert app.conf.broker_url == 'redis://localhost:6379/0'",
+                "registrada = 'contas.tasks.preparar_link_de_recuperacao'",
+                "assert registrada in app.tasks",
+            ]
+        )
+        concluido = subprocess.run(
+            [sys.executable, "-c", codigo],
+            cwd=Path(__file__).resolve().parents[2],
+            env={**os.environ, "DJANGO_SETTINGS_MODULE": "config.test_settings"},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(
+            concluido.returncode,
+            0,
+            concluido.stderr + concluido.stdout,
         )

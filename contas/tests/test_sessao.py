@@ -1,3 +1,4 @@
+import re
 from contextlib import redirect_stdout
 from io import StringIO
 from unittest.mock import patch
@@ -16,6 +17,24 @@ MENSAGEM_RECUPERACAO = (
 )
 MENSAGEM_LINK = "Este link não vale mais."
 STYLESHEET = "/static/contas/portal.css"
+
+
+def _token_csrf(resposta):
+    correspondencia = re.search(
+        r'name="csrfmiddlewaretoken" value="([^"]+)"',
+        resposta.content.decode(),
+    )
+    if correspondencia is None:
+        raise AssertionError("csrfmiddlewaretoken ausente")
+    return correspondencia.group(1)
+
+
+def _formulario_volta_ao_caminho(resposta, caminho):
+    tag = re.search(r"<form\b[^>]*>", resposta.content.decode(), flags=re.IGNORECASE)
+    if tag is None:
+        return False
+    acao = re.search(r"""\baction=(['"])(.*?)\1""", tag.group(0))
+    return acao is None or acao.group(2) == caminho
 
 
 def criar_conta(**kwargs):
@@ -190,6 +209,7 @@ class SessaoTests(TestCase):
         self.assertContains(pagina, 'name="senha"')
         self.assertContains(pagina, STYLESHEET)
         self.assertNotContains(pagina, MENSAGEM_LINK)
+        self.assertTrue(_formulario_volta_ao_caminho(pagina, link))
 
         resposta = self.client.post(link, {"senha": SENHA_NOVA})
         self.assertEqual(resposta.status_code, 302)
@@ -300,10 +320,58 @@ class SessaoTests(TestCase):
         )
         self.assertNotEqual(recusa.status_code, 302)
 
+    def test_csrf_token_from_each_form_accepts_the_post(self):
+        conta = criar_conta()
+        cliente = Client(enforce_csrf_checks=True)
+
+        entrada = cliente.get("/entrar/")
+        login = cliente.post(
+            "/entrar/",
+            {
+                "email": conta.email,
+                "senha": SENHA,
+                "csrfmiddlewaretoken": _token_csrf(entrada),
+            },
+        )
+        self.assertEqual(login.status_code, 302)
+
+        area = cliente.get("/area/")
+        saida = cliente.post(
+            "/sair/",
+            {"csrfmiddlewaretoken": _token_csrf(area)},
+        )
+        self.assertEqual(saida.status_code, 302)
+
+        pedido = cliente.get("/recuperar-senha/")
+        with patch("contas.views.preparar_link_de_recuperacao.delay"):
+            recuperacao = cliente.post(
+                "/recuperar-senha/",
+                {
+                    "email": conta.email,
+                    "csrfmiddlewaretoken": _token_csrf(pedido),
+                },
+            )
+        self.assertEqual(recuperacao.status_code, 200)
+        self.assertContains(recuperacao, MENSAGEM_RECUPERACAO)
+
+        buffer = StringIO()
+        with redirect_stdout(buffer):
+            link = preparar_link_de_recuperacao(str(conta.pk))
+        pagina = cliente.get(link)
+        nova = cliente.post(
+            link,
+            {
+                "senha": SENHA_NOVA,
+                "csrfmiddlewaretoken": _token_csrf(pagina),
+            },
+        )
+        self.assertEqual(nova.status_code, 302)
+
     def test_recovery_page_uses_the_light_base(self):
         resposta = self.client.get("/recuperar-senha/")
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, STYLESHEET)
         self.assertContains(resposta, 'name="email"')
+        self.assertContains(resposta, 'action="/recuperar-senha/"')
         self.assertNotContains(resposta, 'class="dark"')
         self.assertNotContains(resposta, 'data-theme="dark"')
