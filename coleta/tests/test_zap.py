@@ -62,6 +62,11 @@ class ZapTests(TestCase):
         self.assertEqual(anuncio.tipo, "apartamento")
         self.assertEqual(anuncio.imobiliaria, "imobiliária alfa")
         self.assertEqual(anuncio.titulo, "Apartamento no Centro")
+        self.assertEqual(anuncio.endereco, "Rua Exemplo, 10")
+        self.assertEqual(
+            anuncio.descricao,
+            "Anúncio gravado a partir do arquivo de exemplo.",
+        )
         self.assertEqual(anuncio.coletado_em.utcoffset(), timedelta(0))
         self.assertEqual(preco.valor, Decimal("650000.00"))
         self.assertEqual(preco.anuncio, anuncio)
@@ -149,6 +154,24 @@ class ZapTests(TestCase):
         self.assertEqual(anuncio.titulo, "Apartamento no Centro")
         self.assertEqual(Preco.objects.count(), 1)
 
+    def test_dois_ids_vazios_com_urls_diferentes_criam_dois(self):
+        primeiro = _fixture()
+        del primeiro["id"]
+        primeiro["url"] = "https://exemplo.invalid/um"
+        segundo = _fixture()
+        del segundo["id"]
+        segundo["url"] = "https://exemplo.invalid/dois"
+        coletar_zap(primeiro)
+        coletar_zap(segundo)
+        self.assertEqual(Anuncio.objects.count(), 2)
+        self.assertEqual(
+            set(Anuncio.objects.values_list("url", flat=True)),
+            {
+                "https://exemplo.invalid/um",
+                "https://exemplo.invalid/dois",
+            },
+        )
+
     def test_nao_gasta_cota_nem_escreve_visto(self):
         conta = Conta.objects.create_user(
             email="ana-coleta@exemplo.com",
@@ -208,6 +231,22 @@ class ZapTests(TestCase):
         self.assertEqual(Preco.objects.count(), 0)
         self.assertEqual(Falha.objects.get().mensagem, "quebra")
         self.assertEqual(_linhas(saida), ["coleta zap falha: quebra"])
+
+        payload = _fixture()
+        self.assertEqual(coletar_zap(payload), 1)
+        payload["preco"] = "700000"
+        with patch(
+            "anuncios.gravar.Preco.objects.create",
+            side_effect=RuntimeError("quebra"),
+        ):
+            with redirect_stdout(io.StringIO()):
+                resultado = coletar_zap(payload)
+
+        self.assertIsNone(resultado)
+        anuncio = Anuncio.objects.get()
+        self.assertEqual(anuncio.preco, Decimal("650000.00"))
+        self.assertEqual(Preco.objects.count(), 1)
+        self.assertEqual(Preco.objects.get().valor, Decimal("650000.00"))
 
     def test_nao_abre_socket_nem_sai_de_uma_view(self):
         def recusar(*args, **kwargs):

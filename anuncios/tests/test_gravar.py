@@ -106,6 +106,11 @@ class GravarTests(TestCase):
         self.assertEqual(Anuncio.objects.count(), 1)
         self.assertEqual(Anuncio.objects.get().titulo, "Apartamento")
 
+    def test_dois_ids_vazios_com_urls_diferentes_criam_dois(self):
+        gravar(_dados(identificador_externo="", url="https://exemplo.invalid/um"))
+        gravar(_dados(identificador_externo="", url="https://exemplo.invalid/dois"))
+        self.assertEqual(Anuncio.objects.count(), 2)
+
     def test_chave_recusa_duplicata(self):
         gravar(_dados())
         with self.assertRaises(IntegrityError):

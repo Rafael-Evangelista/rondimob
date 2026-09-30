@@ -67,7 +67,7 @@ brew services start redis
 In another terminal, from this repository. The worker connects as `rondimob_worker` at `postgresql://rondimob_worker:dev-only-worker@127.0.0.1/rondimob`:
 
 ```bash
-uv run celery -A config worker --loglevel=info
+uv run celery -A config worker -Q celery,zap --loglevel=info
 ```
 
 The ZAP task `coleta.tasks.coletar_zap` uses the queue `zap`. With no payload argument it reads `coleta/fixtures/zap-exemplo.json` and upserts that recorded listing. It does not call ZAP, Viva Real, OLX, or any other site. Live access waits until Rafael chooses how ZAP may be read.
