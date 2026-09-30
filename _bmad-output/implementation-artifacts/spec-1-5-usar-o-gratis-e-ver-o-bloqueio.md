@@ -2,7 +2,7 @@
 title: 'Usar o grátis e ver o bloqueio'
 type: 'feature'
 created: '2026-09-30'
-status: 'in-progress'
+status: 'done'
 route: 'dispatch'
 baseline_commit: '0f7603ece3be85925979a37c426a04582a178ed7'
 review_loop_iteration: 0
@@ -74,6 +74,15 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+- `low` — README “14th calendar day from the creation date” can be read as creation plus 14, and the counter sentence reads as if both roles run that check. The gate uses creation as day 1 and the counter test uses `rondimob_web`. Route: patch.
+- `false` — the spec says the counter decreases while the column increases — the column counts uses; the area remainder goes from 10 toward 0. Three used becoming 4 is the column. Not a code defect.
+- `medium` — `pesquisas_restantes` ignores the calendar window and still returns a positive count on the 15th day. `/area/` hides it by branching on `pode_pesquisar`. A later caller can show searches left after the trial date. Route: patch.
+- `low` — the blocked area has no “trial over” sentence and an empty radar list — the plans are the ask, and no radar names exist yet. Rejected.
+- `low` — `Conta.save()` can persist a stale counter — current writes use `update_fields` or `aceitar_pesquisa`. Rejected: guarding every save adds a branch no current caller hits.
+- `low` — `Now()` at migrate time starts the window for rows that predate the column — this app has no production accounts yet, and new signups stamp `criada_em` at creation. Rejected.
+- `medium` — tests never desync the in-memory account from the locked row, so `aceitar_pesquisa` could trust the caller and still pass. The current function uses the locked row. Route: patch.
+- edge-case layer returned no findings.
 
 ## Design Notes
 
