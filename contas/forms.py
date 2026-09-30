@@ -98,6 +98,7 @@ class CriarContaForm(forms.Form):
     nome = forms.CharField(label="Nome", required=False, max_length=255)
     email = forms.EmailField(
         label="E-mail",
+        max_length=254,
         error_messages={"required": "Informe o e-mail."},
     )
     telefone = forms.CharField(label="Telefone", required=False, max_length=40)

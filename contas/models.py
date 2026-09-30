@@ -35,7 +35,7 @@ class Conta(AbstractBaseUser):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(max_length=254, unique=True, verbose_name="e-mail")
     tipo = models.CharField(max_length=12, choices=TIPO_CHOICES)
     nome = models.CharField(max_length=255, blank=True, default="")
     telefone = models.CharField(max_length=40, blank=True, default="")

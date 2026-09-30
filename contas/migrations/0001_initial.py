@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 ('password', models.CharField(max_length=128, verbose_name='password')),
                 ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('email', models.EmailField(max_length=254, unique=True)),
+                ('email', models.EmailField(max_length=254, unique=True, verbose_name='e-mail')),
                 ('tipo', models.CharField(choices=[('corretor', 'Corretor'), ('imobiliaria', 'Imobiliária')], max_length=12)),
                 ('nome', models.CharField(blank=True, default='', max_length=255)),
                 ('telefone', models.CharField(blank=True, default='', max_length=40)),

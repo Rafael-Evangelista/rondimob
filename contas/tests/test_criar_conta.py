@@ -226,15 +226,44 @@ class CriarContaTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertFalse(Conta.objects.filter(email=dados["email"]).exists())
 
-    def test_short_password_does_not_create_a_row(self):
-        response = self.client.post(
-            "/criar-conta/",
-            {**CORRETOR, "senha": "curta-1", "email": "curta@exemplo.com"},
-        )
+    def test_password_validators_reject_without_creating_a_row(self):
+        casos = [
+            ("ab-cde1", "pelo menos 8 caracteres"),
+            ("password", "Esta senha é muito comum."),
+            ("9081726354", "Esta senha é inteiramente numérica."),
+            ("ana@exemplo.com", "A senha é muito parecida com e-mail"),
+        ]
+        for senha, mensagem in casos:
+            with self.subTest(senha=senha):
+                response = Client().post("/criar-conta/", {**CORRETOR, "senha": senha})
+                erros = response.context["form"].errors["senha"]
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(Conta.objects.count(), 0)
+                self.assertTrue(any(mensagem in erro for erro in erros), erros)
+
+    def test_post_without_csrf_token_is_rejected(self):
+        response = Client(enforce_csrf_checks=True).post("/criar-conta/", CORRETOR)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Conta.objects.count(), 0)
+
+    def test_get_signup_form_lists_the_controls(self):
+        response = self.client.get("/criar-conta/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(Conta.objects.count(), 0)
-        self.assertContains(response, "8")
+        for campo in (
+            "tipo",
+            "email",
+            "senha",
+            "nome",
+            "telefone",
+            "creci",
+            "razao_social",
+            "cnpj",
+            "responsavel",
+        ):
+            self.assertContains(response, f'name="{campo}"')
+        self.assertNotContains(response, "Informe o e-mail.")
 
     def test_other_type_columns_stay_blank(self):
         corretor = {
