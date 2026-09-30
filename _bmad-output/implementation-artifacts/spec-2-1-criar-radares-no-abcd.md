@@ -2,7 +2,7 @@
 title: 'Criar radares no ABCD'
 type: 'feature'
 created: '2026-09-30'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 baseline_commit: '1e543aa7f6d4992032d252043c6edf4f42e2db18'
 review_loop_iteration: 0
@@ -73,6 +73,19 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+- `medium` — `radares.0001` depends only on `contas.0001`. `migrate radares` grants to `rondimob_web` before `contas.0002` creates those roles. Route: patch, depend on `contas.0002_isolamento_da_conta`.
+- `low` — a negative price or area is stored. Route: patch, reject a bound below zero in `RadarForm` and cover it with a test. Quartos and vagas already use `PositiveIntegerField`.
+- `false` — an inverted range is not stored through the form. `_rejeitar_faixa` adds the error and the template renders that field's errors. The test already expects no row. A raw insert in the isolation helper is not a product writer.
+- `false` — the example is the decimal values 300000, 800000, and 60, which the form accepts. The prose "R$ 300.000" is not the posted string. The labels match the form fields.
+- `false` — an anonymous browser POST without a CSRF token is rejected by `CsrfViewMiddleware` before the view, the same way as the other area posts. The view redirects to `/entrar/` when the request reaches it, and it does not save.
+- `low` — the radar suite does not also assert DELETE, a foreign insert, or the worker role. The policy `WITH CHECK` is `conta_id` equals `app.conta_id`, and the web-role test already shows A cannot read or update B. Rejected: more DML cases are extra tests.
+- `false` — `nomes_de_radar` during `GET /area/` runs inside `IsolamentoDaContaMiddleware`, which sets `app.conta_id` before the view. `Radar.save` also sets it before the insert.
+- `false` — a blank city creates no row and shows the form again. Cidade is required, so the empty value fails before the ABCD check. The control is text because the spec accepts case and missing accents, not a fixed dropdown.
+- `false` — creation does not call `aceitar_pesquisa`, so the calendar day cannot spend a search or block the save. The closed-trial test already keeps the free counter at 10 and the search, favorite, and alert gates shut.
+- `low` — two radars with the same `criado_em` are ordered only by that timestamp. Route: patch, order by `criado_em`, then `id`.
+- `low` — the form page has no link back to the area. Rejected: the browser returns to the area, and adding a link is extra navigation the form does not need.
+- edge-case layer returned the negative bound and the same-timestamp order. verification-gap layer returned no findings.
 
 ## Design Notes
 
