@@ -7,6 +7,12 @@ from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.http import require_POST
 
+from contas.cota import (
+    nomes_de_radar,
+    pode_pesquisar,
+    pesquisas_restantes,
+    ultimo_dia_aberto,
+)
 from contas.forms import (
     MENSAGEM_EMAIL_EM_USO,
     CriarContaForm,
@@ -81,7 +87,15 @@ def criar_conta(request):
 def area(request):
     if not request.user.is_authenticated:
         return redirect("entrar")
-    return render(request, "contas/area.html", {"conta": request.user})
+    conta = request.user
+    aberto = pode_pesquisar(conta)
+    contexto = {"conta": conta, "trial_aberto": aberto}
+    if aberto:
+        contexto["pesquisas_restantes"] = pesquisas_restantes(conta)
+        contexto["ultimo_dia"] = ultimo_dia_aberto(conta)
+    else:
+        contexto["radares"] = nomes_de_radar(conta)
+    return render(request, "contas/area.html", contexto)
 
 
 def recuperar_senha(request):
