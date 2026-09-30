@@ -39,6 +39,8 @@ class Conta(AbstractBaseUser):
         (TIPO_CORRETOR, "Corretor"),
         (TIPO_IMOBILIARIA, "Imobiliária"),
     ]
+    PLANO_PADRAO = "padrao"
+    PLANO_PLUS = "plus"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(max_length=254, unique=True, verbose_name="e-mail")
@@ -51,6 +53,9 @@ class Conta(AbstractBaseUser):
     responsavel = models.CharField(max_length=255, blank=True, default="")
     criada_em = models.DateTimeField(default=timezone.now, db_default=Now())
     pesquisas_gratis_usadas = models.PositiveIntegerField(default=0, db_default=0)
+    plano = models.CharField(max_length=8, blank=True, default="", db_default="")
+    pesquisas_mes_usadas = models.PositiveIntegerField(default=0, db_default=0)
+    mes_da_cota = models.DateField(blank=True, null=True)
 
     objects = ContaManager()
 

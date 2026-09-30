@@ -6,7 +6,36 @@
 <main>
   <h1>Área do cliente</h1>
   <p>{{ conta.nome_exibicao }}</p>
-  {% if trial_aberto %}
+  {% if aviso_personalizado %}
+  <p>O plano Personalizado é por contato.</p>
+  {% endif %}
+  {% if plano_pago %}
+  <p>{{ nome_do_plano }}</p>
+  {% if pesquisas_restantes == 1 %}
+  <p>1 pesquisa restante</p>
+  {% else %}
+  <p>{{ pesquisas_restantes }} pesquisas restantes</p>
+  {% endif %}
+  {% if pesquisas_restantes == 0 %}
+  <section aria-labelledby="resultados">
+    <h2 id="resultados">Resultados</h2>
+    <ul>
+      {% for nome in resultados %}
+      <li>{{ nome }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+  <form method="post" action="/area/plano/">
+    {% csrf_token %}
+    <button type="submit" name="plano" value="padrao">Ativar Padrão</button>
+  </form>
+  <form method="post" action="/area/plano/">
+    {% csrf_token %}
+    <button type="submit" name="plano" value="plus">Ativar Plus</button>
+  </form>
+  <p>O plano Personalizado é por contato.</p>
+  {% elif trial_aberto %}
   {% if pesquisas_restantes == 1 %}
   <p>1 pesquisa restante</p>
   {% else %}
@@ -25,15 +54,24 @@
       <h3>Padrão</h3>
       <p>R$ 97 por mês</p>
       <p>30 pesquisas</p>
+      <form method="post" action="/area/plano/">
+        {% csrf_token %}
+        <button type="submit" name="plano" value="padrao">Ativar Padrão</button>
+      </form>
     </article>
     <article>
       <h3>Plus</h3>
       <p>R$ 197 por mês</p>
       <p>100 pesquisas</p>
+      <form method="post" action="/area/plano/">
+        {% csrf_token %}
+        <button type="submit" name="plano" value="plus">Ativar Plus</button>
+      </form>
     </article>
     <article>
       <h3>Personalizado</h3>
       <p>sob consulta</p>
+      <p>O plano Personalizado é por contato.</p>
     </article>
   </section>
   <section aria-labelledby="radares">
