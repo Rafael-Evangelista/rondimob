@@ -52,6 +52,16 @@ def _definir_usadas(conta, usadas, mes):
 
 
 class AtivarPlanoTests(TestCase):
+    def test_open_trial_area_offers_paid_plans_and_contact(self):
+        conta = _criar(email="aberta@exemplo.com")
+        _entrar(self.client, conta)
+        area = self.client.get("/area/")
+        self.assertContains(area, "10 pesquisas restantes")
+        self.assertContains(area, "Ativar Padrão")
+        self.assertContains(area, "Ativar Plus")
+        self.assertContains(area, CONTATO)
+        self.assertNotContains(area, 'name="plano" value="personalizado"')
+
     def test_anonymous_post_redirects_to_login(self):
         resposta = self.client.post("/area/plano/", {"plano": "padrao"})
         self.assertEqual(resposta.status_code, 302)
@@ -83,6 +93,9 @@ class AtivarPlanoTests(TestCase):
         self.assertEqual(area.status_code, 200)
         self.assertContains(area, "Padrão")
         self.assertContains(area, "30 pesquisas restantes")
+        self.assertContains(area, "Ativar Padrão")
+        self.assertContains(area, "Ativar Plus")
+        self.assertContains(area, CONTATO)
         self.assertNotContains(area, "Resultados")
         self.assertEqual(conta.pesquisas_mes_usadas, 0)
         self.assertEqual(conta.pesquisas_gratis_usadas, 0)
@@ -131,8 +144,9 @@ class AtivarPlanoTests(TestCase):
             resposta = self.client.post("/area/plano/", {"plano": "personalizado"})
         self.assertEqual(aberta.status_code, 200)
         self.assertNotContains(aberta, "R$ 97 por mês")
-        self.assertEqual(resposta.status_code, 200)
-        self.assertContains(resposta, CONTATO)
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(resposta["Location"], "/area/")
+        self.assertContains(self.client.get("/area/"), CONTATO)
         conta.refresh_from_db()
         self.assertEqual(conta.plano, "")
         self.assertEqual(conta.pesquisas_gratis_usadas, 2)
@@ -147,6 +161,8 @@ class AtivarPlanoTests(TestCase):
             area = self.client.get("/area/")
         self.assertContains(area, CONTATO)
         self.assertContains(area, "sob consulta")
+        self.assertContains(area, "Ativar Padrão")
+        self.assertContains(area, "Ativar Plus")
         self.assertNotContains(area, 'name="plano" value="personalizado"')
         bloqueada.refresh_from_db()
         self.assertEqual(bloqueada.plano, "")
@@ -215,6 +231,61 @@ class AtivarPlanoTests(TestCase):
         self.assertEqual(conta.pesquisas_gratis_usadas, 1)
         self.assertEqual(conta.pesquisas_mes_usadas, 0)
         self.assertIsNone(conta.mes_da_cota)
+
+    def test_paid_plan_still_spends_the_month_after_the_free_trial_is_closed(self):
+        conta = _criar(email="paga-fechada@exemplo.com")
+        conta.pesquisas_gratis_usadas = 10
+        conta.save(update_fields=["pesquisas_gratis_usadas"])
+        with patch("django.utils.timezone.now", return_value=JANEIRO):
+            self.assertTrue(ativar_plano(conta, Conta.PLANO_PADRAO))
+            self.assertEqual(pesquisas_restantes(conta), 30)
+            self.assertTrue(aceitar_pesquisa(conta))
+            self.assertTrue(pode_favoritar(conta))
+            self.assertTrue(pode_configurar_alerta(conta))
+            self.assertTrue(pode_pesquisar(conta))
+        conta.refresh_from_db()
+        self.assertEqual(conta.pesquisas_mes_usadas, 1)
+        self.assertEqual(conta.pesquisas_gratis_usadas, 10)
+
+    def test_exhausted_month_restarts_on_the_next_accept(self):
+        conta = _criar(email="vira-mes@exemplo.com")
+        with patch("django.utils.timezone.now", return_value=JANEIRO):
+            self.assertTrue(ativar_plano(conta, Conta.PLANO_PADRAO))
+        _definir_usadas(conta, 30, date(2026, 1, 1))
+        with patch("django.utils.timezone.now", return_value=FEVEREIRO):
+            self.assertEqual(pesquisas_restantes(conta), 30)
+            self.assertTrue(aceitar_pesquisa(conta))
+        conta.refresh_from_db()
+        self.assertEqual(conta.pesquisas_mes_usadas, 1)
+        self.assertEqual(conta.mes_da_cota, date(2026, 2, 1))
+
+    def test_one_monthly_search_left_uses_the_singular(self):
+        conta = _criar(email="uma-mes@exemplo.com")
+        with patch("django.utils.timezone.now", return_value=JANEIRO):
+            self.assertTrue(ativar_plano(conta, Conta.PLANO_PADRAO))
+        _definir_usadas(conta, 29, date(2026, 1, 1))
+        _entrar(self.client, conta)
+        with patch("django.utils.timezone.now", return_value=JANEIRO):
+            area = self.client.get("/area/")
+        self.assertContains(area, "1 pesquisa restante")
+        self.assertNotContains(area, "1 pesquisas restantes")
+
+    def test_switch_to_padrao_after_more_than_thirty_clamps_at_zero(self):
+        conta = _criar(email="troca@exemplo.com")
+        with patch("django.utils.timezone.now", return_value=JANEIRO):
+            self.assertTrue(ativar_plano(conta, Conta.PLANO_PLUS))
+        _definir_usadas(conta, 40, date(2026, 1, 1))
+        _entrar(self.client, conta)
+        with patch("django.utils.timezone.now", return_value=JANEIRO):
+            resposta = self.client.post("/area/plano/", {"plano": "padrao"})
+            area = self.client.get("/area/")
+        self.assertEqual(resposta.status_code, 302)
+        conta.refresh_from_db()
+        self.assertEqual(conta.plano, Conta.PLANO_PADRAO)
+        self.assertEqual(conta.pesquisas_mes_usadas, 40)
+        self.assertContains(area, "0 pesquisas restantes")
+        self.assertContains(area, "Resultados")
+        self.assertNotContains(area, "-10")
 
 
 class MigracaoPlanoTests(TestCase):

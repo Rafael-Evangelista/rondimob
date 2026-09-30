@@ -2,7 +2,7 @@
 title: 'Ativar plano pago'
 type: 'feature'
 created: '2026-09-30'
-status: 'in-progress'
+status: 'done'
 route: 'dispatch'
 baseline_commit: 'cbf372e58a27d20f3a9805ede52196632e89e623'
 review_loop_iteration: 0
@@ -76,6 +76,17 @@ Activation writes `plano` only. The first time `plano` was empty it also sets `p
 ## Spec Change Log
 
 ## Review Triage Log
+
+- `medium` — a paid account whose free trial is already closed was not in the tests, so the paid branch could fall through to the free gate. The code branches on the plan first. Route: patch, covered by `test_paid_plan_still_spends_the_month_after_the_free_trial_is_closed`.
+- `medium` — a month that ended at the cap was not spent in the next month. `_gastar_mes` resets before the cap. Route: patch, covered by `test_exhausted_month_restarts_on_the_next_accept`.
+- `medium` — the blocked and paid areas could lose the activate buttons and the singular remainder without a failing test. Route: patch, those labels are now asserted.
+- `medium` — switching from Plus to Padrão after more than 30 uses could show a negative remainder if `max` were dropped. Route: patch, covered by `test_switch_to_padrao_after_more_than_thirty_clamps_at_zero`.
+- `low` — `POST /area/plano/` for Personalizado rendered 200 on the action URL, so a refresh submitted it again. Route: patch, the view now redirects to `/area/`. The contact line stays on the area.
+- `low` — the open trial omits the prices next to the buttons. The portal and the blocked area still show R$ 97 and R$ 197. Rejected.
+- `false` — submitting the current plan does not zero the month. The spec keeps the used count when a plan is already stored.
+- `low` — an unknown `plano` string is not a choice constraint. Only `padrao` and `plus` are written. Rejected.
+- `false` — the code map sentence about a closed trial spending the free counter disagrees with story 1.5. The gate does not write when the trial is closed.
+- edge-case layer returned no findings.
 
 ## Design Notes
 

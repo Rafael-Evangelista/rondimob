@@ -122,8 +122,6 @@ def ativar_plano(request):
     if plano in (Conta.PLANO_PADRAO, Conta.PLANO_PLUS):
         gravar_plano(request.user, plano)
         return redirect("area")
-    if plano == "personalizado":
-        return area(request, aviso_personalizado=True)
     return redirect("area")
 
 

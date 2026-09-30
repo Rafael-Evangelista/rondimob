@@ -42,6 +42,15 @@
   <p>{{ pesquisas_restantes }} pesquisas restantes</p>
   {% endif %}
   <p>Último dia aberto: {{ ultimo_dia|date:"d/m/Y" }}</p>
+  <form method="post" action="/area/plano/">
+    {% csrf_token %}
+    <button type="submit" name="plano" value="padrao">Ativar Padrão</button>
+  </form>
+  <form method="post" action="/area/plano/">
+    {% csrf_token %}
+    <button type="submit" name="plano" value="plus">Ativar Plus</button>
+  </form>
+  <p>O plano Personalizado é por contato.</p>
   {% else %}
   <section aria-labelledby="planos">
     <h2 id="planos">Planos</h2>
