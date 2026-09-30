@@ -272,6 +272,80 @@ class IsolamentoPolicyTests(TestCase):
             conn.close()
             _apagar(ids)
 
+    def test_web_role_sees_only_its_plan(self):
+        _pular_sem_postgres(self)
+        ids = []
+        conn = _conectar_papel("rondimob_web")
+        try:
+            conta_a = _inserir(conn, "Ana", "plano-a@exemplo.com")
+            conta_b = _inserir(conn, "Bruno", "plano-b@exemplo.com")
+            ids.extend((conta_a, conta_b))
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_a),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        """
+                        SELECT plano, pesquisas_mes_usadas, mes_da_cota
+                        FROM contas_conta
+                        """
+                    ).fetchall(),
+                    [("", 0, None)],
+                )
+                conn.execute(
+                    """
+                    UPDATE contas_conta
+                    SET plano = 'padrao', pesquisas_mes_usadas = 4
+                    """
+                )
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_b),),
+                )
+                conn.execute(
+                    """
+                    UPDATE contas_conta
+                    SET plano = 'plus', pesquisas_mes_usadas = 9
+                    """
+                )
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_a),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        "SELECT plano, pesquisas_mes_usadas FROM contas_conta"
+                    ).fetchall(),
+                    [("padrao", 4)],
+                )
+                alteradas = conn.execute(
+                    """
+                    UPDATE contas_conta
+                    SET plano = 'plus', pesquisas_mes_usadas = 1
+                    WHERE id = %s
+                    """,
+                    (conta_b,),
+                ).rowcount
+                self.assertEqual(alteradas, 0)
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_b),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        "SELECT plano, pesquisas_mes_usadas FROM contas_conta"
+                    ).fetchall(),
+                    [("plus", 9)],
+                )
+        finally:
+            conn.close()
+            _apagar(ids)
+
     def test_aceitar_pesquisa_sets_conta_id_before_the_locked_read(self):
         _pular_sem_postgres(self)
         conta = Conta.objects.create_user(
