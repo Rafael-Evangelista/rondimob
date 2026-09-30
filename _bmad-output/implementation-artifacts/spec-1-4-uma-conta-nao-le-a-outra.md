@@ -2,7 +2,7 @@
 title: 'Uma conta não lê a outra'
 type: 'feature'
 created: '2026-09-30'
-status: 'in-progress'
+status: 'done'
 route: 'dispatch'
 baseline_commit: '9668734d0b4a37bac89e37f84e0e56e559e158af'
 review_loop_iteration: 0
@@ -72,6 +72,26 @@ Signup and password recovery look up an account by email before the id is known.
 ## Spec Change Log
 
 ## Review Triage Log
+
+- `high` — `contas/migrations/0002_isolamento_da_conta.py` — `manage.py runserver` as `rondimob_web` raises `ProgrammingError: permission denied for table django_migrations` inside `check_migrations`. Route: patch.
+- `false` — `0002` `CREATE ROLE` inside the default migration transaction — PostgreSQL 16.15 accepted `BEGIN; CREATE ROLE; ROLLBACK` and `migrate` applied `0002`.
+- `low` — session `app.conta_id` plus `app.login_email` can make an unfiltered `SELECT` return two rows — current views filter by email or primary key, and no request lists every account. Rejected: clearing the setting adds a branch users do not hit.
+- `low` — Django's test client uses the owner connection — the matrix is executed on `rondimob_web` and `rondimob_worker` connections, and a web-role client signed up, logged in, and opened `/area/`. Rejected: pointing the test client at the web role needs a second database alias.
+- `low` — `_apagar` deletes as the owner with no `set_config` — the documented owner is a superuser, which bypasses `FORCE`. Rejected.
+- `false` — migrate rewrites the dev passwords, the email branch can read the password hash, and reverse leaves the roles — the spec fixes those passwords, login must read the row to check the password, and cluster roles stay.
+- `low` — README does not mention `pg_hba.conf` — the Ubuntu defaults authenticated `rondimob_web` over `127.0.0.1` and signup returned 302. Rejected.
+- `false` — `definir_conta` does not open a transaction — the middleware, `Conta.save`, and the recovery task already hold one; web-role signup inserted the row.
+- `false` — worker DML and web access to every `django_session` row — the spec grants that DML, and `django_session` is not a private account table in this story.
+- `false` — no CI job runs the Postgres suite — the spec's verification command is the documented pytest invocation, and it was run.
+- `medium` — `USING` also admits `DELETE` when `app.login_email` matches — real for a raw `DELETE`, and no view deletes. Rejected: restricting the command would change the approved `conta_isola` expression.
+- `low` — `app.login_email` stays set after the lookup — the same request does not issue a second unfiltered query. Rejected.
+- `false` — `python -m celery` would use the web URL — `database_url_for_argv(["python", "-m", "celery", "worker"])` already expects the worker URL.
+- `false` — an explicit `DATABASE_URL` can be a superuser — the README states that this replaces the role on purpose.
+- `low` — a session-hash mismatch leaves `app.conta_id` set while `request.user` is anonymous — views in that request use `request.user`. Rejected.
+- `false` — `ALTER ROLE` resets an existing `rondimob_web` — the spec requires those attributes and the dev password.
+- `false` — the rejected cross-account insert leaks a row — `conn.transaction()` rolls it back.
+- `false` — the email branch returns B during A's transaction — a transaction that only sets A's id returns only A; the email branch is the approved login lookup.
+- `medium` — order assertions run inside `TestCase`, so dropping the middleware transaction still passes — `set_config(..., true)` would die before the query under autocommit. Route: patch.
 
 ## Design Notes
 
