@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import connection, transaction
 from django.test import Client, SimpleTestCase, TestCase, TransactionTestCase
 
+from contas.cota import aceitar_pesquisa
 from contas.isolamento import definir_conta, definir_email_de_login
 from contas.models import Conta
 
@@ -206,6 +207,97 @@ class IsolamentoPolicyTests(TestCase):
         finally:
             conn.close()
             _apagar(ids)
+
+    def test_web_role_sees_only_its_free_search_counter(self):
+        _pular_sem_postgres(self)
+        ids = []
+        conn = _conectar_papel("rondimob_web")
+        try:
+            conta_a = _inserir(conn, "Ana", "cota-a@exemplo.com")
+            conta_b = _inserir(conn, "Bruno", "cota-b@exemplo.com")
+            ids.extend((conta_a, conta_b))
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_a),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        """
+                        SELECT pesquisas_gratis_usadas, criada_em IS NOT NULL
+                        FROM contas_conta
+                        """
+                    ).fetchall(),
+                    [(0, True)],
+                )
+                conn.execute("UPDATE contas_conta SET pesquisas_gratis_usadas = 3")
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_b),),
+                )
+                conn.execute("UPDATE contas_conta SET pesquisas_gratis_usadas = 7")
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_a),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        "SELECT pesquisas_gratis_usadas FROM contas_conta"
+                    ).fetchall(),
+                    [(3,)],
+                )
+                alteradas = conn.execute(
+                    """
+                    UPDATE contas_conta
+                    SET pesquisas_gratis_usadas = 9
+                    WHERE id = %s
+                    """,
+                    (conta_b,),
+                ).rowcount
+                self.assertEqual(alteradas, 0)
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_b),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        "SELECT pesquisas_gratis_usadas FROM contas_conta"
+                    ).fetchall(),
+                    [(7,)],
+                )
+        finally:
+            conn.close()
+            _apagar(ids)
+
+    def test_aceitar_pesquisa_sets_conta_id_before_the_locked_read(self):
+        _pular_sem_postgres(self)
+        conta = Conta.objects.create_user(
+            email="cota-lock@exemplo.com",
+            password=SENHA,
+            tipo=Conta.TIPO_CORRETOR,
+            nome="Ana Lima",
+        )
+        with _capturar_sql() as captured:
+            self.assertTrue(aceitar_pesquisa(conta))
+        leitura = _indice(
+            captured,
+            lambda sql, _params: "FOR UPDATE" in sql.upper() and "contas_conta" in sql,
+        )
+        self.assertLess(
+            _indice(captured, _set_config("app.conta_id", conta.pk)),
+            leitura,
+        )
+        escrita = _indice(
+            captured,
+            lambda sql, _params: sql.lstrip().upper().startswith("UPDATE")
+            and "pesquisas_gratis_usadas" in sql,
+        )
+        self.assertLess(leitura, escrita)
+        conta.refresh_from_db()
+        self.assertEqual(conta.pesquisas_gratis_usadas, 1)
 
     def test_setting_dies_with_the_transaction(self):
         _pular_sem_postgres(self)

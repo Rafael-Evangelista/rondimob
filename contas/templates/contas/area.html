@@ -6,6 +6,45 @@
 <main>
   <h1>Área do cliente</h1>
   <p>{{ conta.nome_exibicao }}</p>
+  {% if trial_aberto %}
+  {% if pesquisas_restantes == 1 %}
+  <p>1 pesquisa restante</p>
+  {% else %}
+  <p>{{ pesquisas_restantes }} pesquisas restantes</p>
+  {% endif %}
+  <p>Último dia aberto: {{ ultimo_dia|date:"d/m/Y" }}</p>
+  {% else %}
+  <section aria-labelledby="planos">
+    <h2 id="planos">Planos</h2>
+    <article>
+      <h3>Grátis</h3>
+      <p>R$ 0</p>
+      <p>10 pesquisas em 14 dias</p>
+    </article>
+    <article>
+      <h3>Padrão</h3>
+      <p>R$ 97 por mês</p>
+      <p>30 pesquisas</p>
+    </article>
+    <article>
+      <h3>Plus</h3>
+      <p>R$ 197 por mês</p>
+      <p>100 pesquisas</p>
+    </article>
+    <article>
+      <h3>Personalizado</h3>
+      <p>sob consulta</p>
+    </article>
+  </section>
+  <section aria-labelledby="radares">
+    <h2 id="radares">Radares</h2>
+    <ul>
+      {% for nome in radares %}
+      <li>{{ nome }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
   <form method="post" action="/sair/">
     {% csrf_token %}
     <button type="submit">Sair</button>
