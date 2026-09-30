@@ -2,7 +2,9 @@ import unicodedata
 import uuid
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.db import models
+from django.db import models, transaction
+
+from contas.isolamento import definir_conta
 
 
 def normalizar_email(email):
@@ -18,6 +20,8 @@ class ContaManager(BaseUserManager):
         if not str(email or "").strip():
             raise ValueError("O e-mail é obrigatório.")
         conta = self.model(email=normalizar_email(email), **extra_fields)
+        if conta.id is None:
+            conta.id = uuid.uuid4()
         conta.set_password(password)
         conta.save(using=self._db)
         return conta
@@ -52,7 +56,12 @@ class Conta(AbstractBaseUser):
 
     def save(self, **kwargs):
         self.email = normalizar_email(self.email)
-        super().save(**kwargs)
+        if self.id is None:
+            self.id = uuid.uuid4()
+        using = kwargs.get("using")
+        with transaction.atomic(using=using):
+            definir_conta(self.id, using=using)
+            super().save(**kwargs)
 
     @property
     def nome_exibicao(self):

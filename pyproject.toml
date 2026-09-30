@@ -16,6 +16,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+# SQLite overlay. Isolation needs: uv run pytest --ds config.postgres_settings
 DJANGO_SETTINGS_MODULE = "config.test_settings"
 python_files = ["test_*.py"]
 pythonpath = ["."]

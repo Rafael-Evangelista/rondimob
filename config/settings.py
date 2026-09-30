@@ -1,6 +1,7 @@
 """Django settings for the rondimob public portal."""
 
 import os
+import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "contas.middleware.IsolamentoDaContaMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -70,7 +72,32 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-DEFAULT_DATABASE_URL = "postgresql://localhost/rondimob"
+OWNER_DATABASE_URL = "postgresql:///rondimob"
+WEB_DATABASE_URL = "postgresql://rondimob_web:dev-only-web@127.0.0.1/rondimob"
+WORKER_DATABASE_URL = "postgresql://rondimob_worker:dev-only-worker@127.0.0.1/rondimob"
+DEFAULT_DATABASE_URL = OWNER_DATABASE_URL
+
+
+def database_url_for_argv(argv=None):
+    """Owner for migrate, worker for Celery, web otherwise.
+
+    An explicit DATABASE_URL replaces that choice for every command.
+    """
+    explicit = os.environ.get("DATABASE_URL", "").strip()
+    if explicit:
+        return explicit
+    argv = list(sys.argv if argv is None else argv)
+    if _argv_e_celery(argv):
+        return WORKER_DATABASE_URL
+    command = argv[1] if len(argv) > 1 else ""
+    if command in {"migrate", "makemigrations"}:
+        return OWNER_DATABASE_URL
+    return WEB_DATABASE_URL
+
+
+def _argv_e_celery(argv):
+    nomes = {Path(parte).name.lower() for parte in argv[:4]}
+    return "celery" in nomes or any(nome.startswith("celery") for nome in nomes)
 
 
 def database_from_url(url):
@@ -89,7 +116,7 @@ def database_from_url(url):
 
 
 DATABASES = {
-    "default": database_from_url(os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)),
+    "default": database_from_url(database_url_for_argv()),
 }
 
 LANGUAGE_CODE = "pt-br"

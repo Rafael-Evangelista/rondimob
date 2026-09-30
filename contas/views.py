@@ -14,7 +14,8 @@ from contas.forms import (
     EntrarForm,
     RecuperarSenhaForm,
 )
-from contas.models import Conta
+from contas.isolamento import definir_conta, definir_email_de_login
+from contas.models import Conta, normalizar_email
 from contas.tasks import preparar_link_de_recuperacao
 
 MENSAGEM_LOGIN = "E-mail ou senha incorretos."
@@ -29,6 +30,7 @@ def entrar(request):
     if request.method == "POST":
         form = EntrarForm(request.POST)
         if form.is_valid():
+            definir_email_de_login(form.cleaned_data["email"])
             conta = authenticate(
                 request,
                 username=form.cleaned_data["email"],
@@ -53,6 +55,7 @@ def sair(request):
 def criar_conta(request):
     if request.method == "POST":
         form = CriarContaForm(request.POST)
+        definir_email_de_login(normalizar_email(request.POST.get("email", "")))
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -85,6 +88,7 @@ def recuperar_senha(request):
     if request.method == "POST":
         form = RecuperarSenhaForm(request.POST)
         if form.is_valid():
+            definir_email_de_login(form.cleaned_data["email"])
             conta = Conta.objects.filter(email=form.cleaned_data["email"]).first()
             if conta is not None:
                 preparar_link_de_recuperacao.delay(str(conta.pk))
@@ -101,6 +105,7 @@ def recuperar_senha(request):
 def _conta_pelo_uidb64(uidb64):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
+        definir_conta(uid)
         return Conta.objects.get(pk=uid)
     except (
         Conta.DoesNotExist,
