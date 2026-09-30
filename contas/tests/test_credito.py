@@ -302,6 +302,20 @@ class RecarregarCreditoTests(TestCase):
         self.assertContains(area, ">Recarregar<")
         self.assertNotContains(area, "<li>")
 
+    def test_paid_area_shows_one_credit_and_get_does_not_reload(self):
+        conta = _criar(email="um@exemplo.com")
+        _ativar(conta, Conta.PLANO_PADRAO)
+        _entrar(self.client, conta)
+        negado = self.client.get("/area/credito/")
+        self.assertEqual(negado.status_code, 405)
+        self.assertEqual(Credito.objects.filter(conta=conta).count(), 0)
+        Credito.objects.create(conta=conta, preco=PRECO, restante=1)
+        with patch("django.utils.timezone.now", return_value=JANEIRO):
+            area = self.client.get("/area/")
+        self.assertContains(area, "1 crédito")
+        self.assertNotContains(area, "1 créditos")
+        self.assertContains(area, 'action="/area/credito/"')
+
 
 class MigracaoCreditoTests(TestCase):
     def test_migration_isolates_only_the_credit_table(self):
