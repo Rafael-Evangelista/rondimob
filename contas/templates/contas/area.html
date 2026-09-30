@@ -95,6 +95,7 @@
       <p>O plano Personalizado é por contato.</p>
     </article>
   </section>
+  {% endif %}
   <section aria-labelledby="radares">
     <h2 id="radares">Radares</h2>
     <ul>
@@ -102,8 +103,8 @@
       <li>{{ nome }}</li>
       {% endfor %}
     </ul>
+    <a href="/area/radares/novo/">Novo radar</a>
   </section>
-  {% endif %}
   <form method="post" action="/sair/">
     {% csrf_token %}
     <button type="submit">Sair</button>

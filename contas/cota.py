@@ -62,8 +62,13 @@ def pesquisas_restantes(conta):
 
 
 def nomes_de_radar(conta):
-    """Radar names for this account. Empty until a later epic stores radars."""
-    return []
+    """Labels for this account's radars, oldest first."""
+    from radares.models import Radar
+
+    return [
+        radar.rotulo
+        for radar in Radar.objects.filter(conta=conta).order_by("criado_em", "id")
+    ]
 
 
 def resultados_gravados(conta):

@@ -61,6 +61,10 @@ def _apagar(ids):
                 "DELETE FROM contas_credito WHERE conta_id = %s",
                 (conta_id,),
             )
+            conn.execute(
+                "DELETE FROM radares_radar WHERE conta_id = %s",
+                (conta_id,),
+            )
             conn.execute("DELETE FROM contas_conta WHERE id = %s", (conta_id,))
 
 
@@ -79,6 +83,30 @@ def _inserir_credito(conn, conta_id, restante):
             (credito_id, restante, conta_id),
         )
     return credito_id
+
+
+def _inserir_radar(conn, conta_id, cidade="Santo André"):
+    radar_id = uuid.uuid4()
+    with conn.transaction():
+        conn.execute(
+            "SELECT set_config('app.conta_id', %s, true)",
+            (str(conta_id),),
+        )
+        conn.execute(
+            """
+            INSERT INTO radares_radar (
+                id, imobiliaria, cidade, bairro, tipo,
+                preco_minimo, preco_maximo, area_minima, area_maxima,
+                quartos_minimos, vagas_minimas, criado_em, conta_id
+            ) VALUES (
+                %s, 'alfa', %s, '', 'apartamento',
+                300000, 800000, 60, NULL,
+                2, 1, now(), %s
+            )
+            """,
+            (radar_id, cidade, conta_id),
+        )
+    return radar_id
 
 
 def _inserir(conn, nome, email):
@@ -506,7 +534,7 @@ class IsolamentoPolicyTests(TestCase):
             )
             self.assertEqual(
                 [linha[0] for linha in cursor.fetchall()],
-                ["contas_conta", "contas_credito"],
+                ["contas_conta", "contas_credito", "radares_radar"],
             )
             cursor.execute(
                 """
@@ -565,6 +593,35 @@ class IsolamentoPolicyTests(TestCase):
         self.assertNotIn("app.login_email", usando_credito)
         self.assertIn("app.conta_id", checagem_credito)
         self.assertNotIn("app.login_email", checagem_credito)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT c.relrowsecurity, c.relforcerowsecurity
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relname = 'radares_radar'
+                """
+            )
+            self.assertEqual(cursor.fetchone(), (True, True))
+            cursor.execute(
+                """
+                SELECT pol.polname,
+                       pg_get_expr(pol.polqual, pol.polrelid),
+                       pg_get_expr(pol.polwithcheck, pol.polrelid)
+                FROM pg_policy pol
+                JOIN pg_class c ON c.oid = pol.polrelid
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relname = 'radares_radar'
+                """
+            )
+            politicas_radar = cursor.fetchall()
+        self.assertEqual(len(politicas_radar), 1)
+        nome_radar, usando_radar, checagem_radar = politicas_radar[0]
+        self.assertEqual(nome_radar, "conta_isola")
+        self.assertIn("app.conta_id", usando_radar)
+        self.assertNotIn("app.login_email", usando_radar)
+        self.assertIn("app.conta_id", checagem_radar)
+        self.assertNotIn("app.login_email", checagem_radar)
         self.assertIsNone(importlib.util.find_spec("django_tenants"))
         self.assertNotIn("django_tenants", settings.INSTALLED_APPS)
         with connection.cursor() as cursor:
@@ -616,13 +673,38 @@ class IsolamentoPolicyTests(TestCase):
                             (papel,),
                         ).fetchall()
                     }
+                    dono_radar = conn.execute(
+                        """
+                        SELECT pg_get_userbyid(c.relowner)
+                        FROM pg_class c
+                        JOIN pg_namespace n ON n.oid = c.relnamespace
+                        WHERE n.nspname = 'public' AND c.relname = 'radares_radar'
+                        """
+                    ).fetchone()[0]
+                    privilegios_radar = {
+                        linha[0]
+                        for linha in conn.execute(
+                            """
+                            SELECT privilege_type
+                            FROM information_schema.role_table_grants
+                            WHERE grantee = %s
+                              AND table_schema = 'public'
+                              AND table_name = 'radares_radar'
+                            """,
+                            (papel,),
+                        ).fetchall()
+                    }
                 self.assertEqual(papel_atual, papel)
                 self.assertFalse(superuser)
                 self.assertFalse(bypass)
                 self.assertNotEqual(dono, papel)
                 self.assertNotEqual(dono_credito, papel)
+                self.assertNotEqual(dono_radar, papel)
                 self.assertTrue(
                     {"SELECT", "INSERT", "UPDATE", "DELETE"} <= privilegios_credito
+                )
+                self.assertTrue(
+                    {"SELECT", "INSERT", "UPDATE", "DELETE"} <= privilegios_radar
                 )
 
     def test_web_role_sees_only_its_credit(self):
@@ -672,6 +754,55 @@ class IsolamentoPolicyTests(TestCase):
                         "SELECT conta_id::text, restante FROM contas_credito"
                     ).fetchall(),
                     [(str(conta_b), 4)],
+                )
+        finally:
+            conn.close()
+            _apagar(ids)
+
+    def test_web_role_sees_only_its_radar(self):
+        _pular_sem_postgres(self)
+        ids = []
+        conn = _conectar_papel("rondimob_web")
+        try:
+            conta_a = _inserir(conn, "Ana", "radar-a@exemplo.com")
+            conta_b = _inserir(conn, "Bruno", "radar-b@exemplo.com")
+            ids.extend((conta_a, conta_b))
+            _inserir_radar(conn, conta_a, "Santo André")
+            _inserir_radar(conn, conta_b, "Diadema")
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_a),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        "SELECT conta_id::text, cidade FROM radares_radar"
+                    ).fetchall(),
+                    [(str(conta_a), "Santo André")],
+                )
+                alteradas = conn.execute(
+                    """
+                    UPDATE radares_radar
+                    SET cidade = 'São Paulo'
+                    WHERE conta_id = %s
+                    """,
+                    (conta_b,),
+                ).rowcount
+                self.assertEqual(alteradas, 0)
+                self.assertEqual(
+                    conn.execute("SELECT cidade FROM radares_radar").fetchall(),
+                    [("Santo André",)],
+                )
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_b),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        "SELECT conta_id::text, cidade FROM radares_radar"
+                    ).fetchall(),
+                    [(str(conta_b), "Diadema")],
                 )
         finally:
             conn.close()

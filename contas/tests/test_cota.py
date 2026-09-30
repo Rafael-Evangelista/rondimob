@@ -100,7 +100,9 @@ class CotaGratisTests(TestCase):
         self.assertContains(area, "10 pesquisas restantes")
         self.assertContains(area, f"Último dia aberto: {ultimo.strftime('%d/%m/%Y')}")
         self.assertNotContains(area, "R$ 97 por mês")
-        self.assertNotContains(area, "Radares")
+        self.assertContains(area, "Radares")
+        self.assertContains(area, "Novo radar")
+        self.assertNotContains(area, "<li>")
         self.assertEqual(conta.pesquisas_gratis_usadas, 0)
 
     def test_accepted_search_is_the_only_change_to_the_counter(self):

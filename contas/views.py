@@ -98,6 +98,7 @@ def area(request, aviso_personalizado=False):
         "conta": conta,
         "aviso_personalizado": aviso_personalizado,
         "plano_pago": plano_pago(conta),
+        "radares": nomes_de_radar(conta),
     }
     if contexto["plano_pago"]:
         restantes = pesquisas_restantes(conta)
@@ -113,8 +114,6 @@ def area(request, aviso_personalizado=False):
     if aberto:
         contexto["pesquisas_restantes"] = pesquisas_restantes(conta)
         contexto["ultimo_dia"] = ultimo_dia_aberto(conta)
-    else:
-        contexto["radares"] = nomes_de_radar(conta)
     return render(request, "contas/area.html", contexto)
 
 
