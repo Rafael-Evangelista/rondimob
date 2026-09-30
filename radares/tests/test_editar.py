@@ -119,6 +119,7 @@ class EditarRadarTests(TestCase):
         _entrar(self.client, conta)
         criar = self.client.get("/area/radares/novo/")
         self.assertContains(criar, "Novo radar")
+        self.assertContains(criar, "Criar radar")
         self.assertContains(criar, 'action="/area/radares/novo/"')
 
         lista = self.client.get("/area/")
@@ -129,6 +130,8 @@ class EditarRadarTests(TestCase):
         pagina = self.client.get(url)
         self.assertEqual(pagina.status_code, 200)
         self.assertContains(pagina, "Editar radar")
+        self.assertContains(pagina, "Salvar")
+        self.assertNotContains(pagina, "Criar radar")
         self.assertContains(pagina, f'action="{url}"')
         self.assertContains(pagina, 'value="Santo André"')
         self.assertEqual(_foto(radar), antes)

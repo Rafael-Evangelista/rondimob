@@ -17,7 +17,12 @@ def novo(request):
     return render(
         request,
         "radares/novo.html",
-        {"form": form, "titulo": "Novo radar", "acao": "/area/radares/novo/"},
+        {
+            "form": form,
+            "titulo": "Novo radar",
+            "acao": "/area/radares/novo/",
+            "botao": "Criar radar",
+        },
     )
 
 
@@ -39,5 +44,6 @@ def editar(request, radar_id):
             "form": form,
             "titulo": "Editar radar",
             "acao": f"/area/radares/{radar.id}/",
+            "botao": "Salvar",
         },
     )
