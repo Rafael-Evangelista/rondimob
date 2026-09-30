@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import celery
 import django
 from django.conf import settings
 from django.contrib.staticfiles.finders import find
@@ -64,12 +65,12 @@ class PortalTests(SimpleTestCase):
         body = response.content.decode()
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "A área do cliente fica neste site.")
-        self.assertContains(response, "O acesso vai pedir e-mail e senha.")
-        self.assertNotIn("<form", body.lower())
-        self.assertNotIn("<input", body.lower())
-        self.assertNotIn("<button", body.lower())
+        self.assertIn("<form", body.lower())
+        self.assertContains(response, 'name="email"')
+        self.assertContains(response, 'name="senha"')
+        self.assertContains(response, 'action="/entrar/"')
         self.assertNotIn("sessionid", response.cookies)
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_public_pages_use_a_light_base(self):
         css_path = find("contas/portal.css")
@@ -82,7 +83,7 @@ class PortalTests(SimpleTestCase):
         self.assertNotIn("prefers-color-scheme: dark", css)
         self.assertNotRegex(css, r"color-scheme:\s*dark")
 
-        for path in ("/", "/entrar/", "/criar-conta/"):
+        for path in ("/", "/entrar/", "/criar-conta/", "/recuperar-senha/"):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, STYLESHEET)
@@ -119,3 +120,8 @@ class PortalTests(SimpleTestCase):
         expected = database_from_url(used_url)
         configured = production_settings.DATABASES["default"]
         self.assertEqual({key: configured[key] for key in expected}, expected)
+        self.assertEqual(celery.__version__, "5.6.3")
+        self.assertEqual(
+            production_settings.CELERY_BROKER_URL,
+            "redis://localhost:6379/0",
+        )

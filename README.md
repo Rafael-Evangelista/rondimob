@@ -1,6 +1,6 @@
 # rondimob
 
-Public portal and client area. The application database is PostgreSQL. Python 3.13.15 and Django 6.1.1.
+Public portal and client area. The application database is PostgreSQL. Python 3.13.15, Django 6.1.1, and Celery 5.6.3.
 
 ## Local PostgreSQL
 
@@ -36,9 +36,34 @@ uv run python manage.py runserver
 
 Open `http://localhost:8000/`. Signup is at `http://localhost:8000/criar-conta/`.
 
+## Redis and the worker
+
+Password recovery does not send mail. `POST /recuperar-senha/` enqueues a Celery task. The broker is `redis://localhost:6379/0`. The worker logs the reset link to stdout.
+
+Debian or Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install -y redis-server
+sudo service redis-server start
+```
+
+macOS with Homebrew:
+
+```bash
+brew install redis
+brew services start redis
+```
+
+In another terminal, from this repository:
+
+```bash
+uv run celery -A config worker --loglevel=info
+```
+
 ## Tests
 
-Pytest loads `config.test_settings`, an in-memory SQLite overlay. A local PostgreSQL server is not required. The application engine in `config.settings` stays PostgreSQL.
+Pytest loads `config.test_settings`, an in-memory SQLite overlay. A local PostgreSQL server is not required, and neither is Redis. The application engine in `config.settings` stays PostgreSQL. Pytest mocks the Celery `delay` call and runs the task function directly.
 
 ```bash
 uv sync

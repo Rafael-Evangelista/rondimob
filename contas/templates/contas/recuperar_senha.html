@@ -1,0 +1,22 @@
+{% extends "contas/base.html" %}
+
+{% block title %}Recuperar senha — rondimob{% endblock %}
+
+{% block content %}
+<main>
+  <h1>Recuperar senha</h1>
+  {% if confirmado %}
+    <p>Se houver uma conta com esse e-mail, o pedido de nova senha foi registrado.</p>
+  {% else %}
+    <form method="post" action="/recuperar-senha/">
+      {% csrf_token %}
+      <p>
+        <label for="{{ form.email.id_for_label }}">E-mail</label>
+        {{ form.email }}
+        {{ form.email.errors }}
+      </p>
+      <button type="submit">Pedir nova senha</button>
+    </form>
+  {% endif %}
+</main>
+{% endblock %}

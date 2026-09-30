@@ -6,5 +6,9 @@
 <main>
   <h1>Área do cliente</h1>
   <p>{{ conta.nome_exibicao }}</p>
+  <form method="post" action="/sair/">
+    {% csrf_token %}
+    <button type="submit">Sair</button>
+  </form>
 </main>
 {% endblock %}

@@ -1,0 +1,22 @@
+{% extends "contas/base.html" %}
+
+{% block title %}Nova senha — rondimob{% endblock %}
+
+{% block content %}
+<main>
+  <h1>Nova senha</h1>
+  {% if invalido %}
+    <p>{{ mensagem }}</p>
+  {% else %}
+    <form method="post">
+      {% csrf_token %}
+      <p>
+        <label for="{{ form.senha.id_for_label }}">Senha</label>
+        {{ form.senha }}
+        {{ form.senha.errors }}
+      </p>
+      <button type="submit">Definir senha</button>
+    </form>
+  {% endif %}
+</main>
+{% endblock %}
