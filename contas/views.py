@@ -10,7 +10,6 @@ from django.views.decorators.http import require_POST
 from contas.cota import (
     ativar_plano as gravar_plano,
     nome_do_plano,
-    nomes_de_radar,
     plano_pago,
     pode_pesquisar,
     pesquisas_restantes,
@@ -29,6 +28,7 @@ from contas.forms import (
 from contas.isolamento import definir_conta, definir_email_de_login
 from contas.models import Conta, normalizar_email
 from contas.tasks import preparar_link_de_recuperacao
+from radares.models import Radar
 
 MENSAGEM_LOGIN = "E-mail ou senha incorretos."
 MENSAGEM_LINK_INVALIDO = "Este link não vale mais."
@@ -98,7 +98,7 @@ def area(request, aviso_personalizado=False):
         "conta": conta,
         "aviso_personalizado": aviso_personalizado,
         "plano_pago": plano_pago(conta),
-        "radares": nomes_de_radar(conta),
+        "radares": Radar.objects.filter(conta=conta).order_by("criado_em", "id"),
     }
     if contexto["plano_pago"]:
         restantes = pesquisas_restantes(conta)

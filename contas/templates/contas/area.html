@@ -99,8 +99,8 @@
   <section aria-labelledby="radares">
     <h2 id="radares">Radares</h2>
     <ul>
-      {% for nome in radares %}
-      <li>{{ nome }}</li>
+      {% for radar in radares %}
+      <li><a href="/area/radares/{{ radar.id }}/">{{ radar.rotulo }}</a></li>
       {% endfor %}
     </ul>
     <a href="/area/radares/novo/">Novo radar</a>

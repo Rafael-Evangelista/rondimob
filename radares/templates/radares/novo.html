@@ -1,11 +1,11 @@
 {% extends "contas/base.html" %}
 
-{% block title %}Novo radar — rondimob{% endblock %}
+{% block title %}{{ titulo }} — rondimob{% endblock %}
 
 {% block content %}
 <main>
-  <h1>Novo radar</h1>
-  <form method="post" action="/area/radares/novo/">
+  <h1>{{ titulo }}</h1>
+  <form method="post" action="{{ acao }}">
     {% csrf_token %}
     <p>
       <label for="{{ form.imobiliaria.id_for_label }}">Imobiliária anunciante</label>
