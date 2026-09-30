@@ -14,6 +14,7 @@ from contas.cota import (
     pode_configurar_alerta,
     pode_favoritar,
     pode_pesquisar,
+    pesquisas_restantes,
     ultimo_dia_aberto,
 )
 from contas.isolamento import definir_conta
@@ -138,6 +139,19 @@ class CotaGratisTests(TestCase):
         segunda = self.client.get("/area/")
         self.assertContains(segunda, "5 pesquisas restantes")
 
+    def test_locked_row_wins_over_unsaved_counter_and_creation(self):
+        dia_1 = datetime(2026, 9, 1, 12, 0, tzinfo=FUSO)
+        conta = _criar(email="stale@exemplo.com")
+        _definir_criacao(conta, dia_1)
+        _definir_usadas(conta, 3)
+        conta.pesquisas_gratis_usadas = 10
+        conta.criada_em = datetime(2020, 1, 1, 12, 0, tzinfo=FUSO)
+        with patch("django.utils.timezone.now", return_value=dia_1):
+            self.assertTrue(aceitar_pesquisa(conta))
+        conta.refresh_from_db()
+        self.assertEqual(conta.pesquisas_gratis_usadas, 4)
+        self.assertEqual(data_de_criacao(conta), date(2026, 9, 1))
+
     def test_signup_login_home_and_area_do_not_spend_a_search(self):
         criada = self.client.post("/criar-conta/", CORRETOR)
         self.assertEqual(criada.status_code, 302)
@@ -216,6 +230,8 @@ class CotaGratisTests(TestCase):
         _definir_criacao(bloqueada, dia_1)
         _entrar(self.client, bloqueada)
         with patch("django.utils.timezone.now", return_value=dia_15):
+            self.assertEqual(bloqueada.pesquisas_gratis_usadas, 0)
+            self.assertEqual(pesquisas_restantes(bloqueada), 0)
             self.assertFalse(pode_pesquisar(bloqueada))
             self.assertFalse(pode_favoritar(bloqueada))
             self.assertFalse(pode_configurar_alerta(bloqueada))

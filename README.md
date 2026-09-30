@@ -37,7 +37,7 @@ uv run python manage.py runserver
 
 Open `http://localhost:8000/`. Signup is at `http://localhost:8000/criar-conta/`.
 
-A new account's area shows the free trial: 10 searches left, and the last open day. That day is the 14th calendar day from the creation date in America/Sao_Paulo. Signup, login, logout, the public portal, and opening the area do not spend a search. After 10 searches, or on the following calendar day, the area shows the four plans and the radar names that already exist.
+A new account's area shows the free trial: 10 searches left, and the last open day. The creation date in America/Sao_Paulo is day 1, and the last open day is 13 days later. Signup, login, logout, the public portal, and opening the area do not spend a search. After 10 searches, or on the following calendar day, the area shows the four plans and the radar names that already exist.
 
 ## Redis and the worker
 
@@ -68,7 +68,7 @@ uv run celery -A config worker --loglevel=info
 
 `uv run pytest` loads `config.test_settings`, an in-memory SQLite overlay. It covers the portal, signup, session, and free-trial pages. PostgreSQL is not required, and neither is Redis. Isolation tests are skipped, including the free-search counter. The account-context helper does not call `set_config` on SQLite. The application engine in `config.settings` stays PostgreSQL. Pytest mocks the Celery `delay` call and runs the task function directly.
 
-`uv run pytest --ds config.postgres_settings` runs the same suite, including isolation, against the local PostgreSQL server. It needs the `rondimob` database and the owner role from the install steps. The Django connection for that command is the table owner. The isolation tests also connect as `rondimob_web` and `rondimob_worker` and check that one account cannot read the other, including the free-search counter.
+`uv run pytest --ds config.postgres_settings` runs the same suite, including isolation, against the local PostgreSQL server. It needs the `rondimob` database and the owner role from the install steps. The Django connection for that command is the table owner. The isolation tests also connect as `rondimob_web` and `rondimob_worker` and check that one account cannot read the other. The free-search counter check connects as `rondimob_web`.
 
 ```bash
 uv sync

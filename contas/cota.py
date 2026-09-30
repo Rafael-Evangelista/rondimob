@@ -26,10 +26,9 @@ def ultimo_dia_aberto(conta):
 
 
 def pesquisas_restantes(conta):
-    usadas = conta.pesquisas_gratis_usadas
-    if usadas >= LIMITE_DE_PESQUISAS:
+    if not _aberto(conta):
         return 0
-    return LIMITE_DE_PESQUISAS - usadas
+    return LIMITE_DE_PESQUISAS - conta.pesquisas_gratis_usadas
 
 
 def nomes_de_radar(conta):
