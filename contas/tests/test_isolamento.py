@@ -5,7 +5,7 @@ from contextlib import contextmanager
 import psycopg
 from django.conf import settings
 from django.db import connection, transaction
-from django.test import Client, SimpleTestCase, TestCase
+from django.test import Client, SimpleTestCase, TestCase, TransactionTestCase
 
 from contas.isolamento import definir_conta, definir_email_de_login
 from contas.models import Conta
@@ -495,3 +495,57 @@ class IsolamentoPolicyTests(TestCase):
             _indice(captured, _set_config("app.login_email", conta.email)),
             _indice(captured, _tabela_conta),
         )
+
+
+class IsolamentoPolicyGrantTests(TestCase):
+    def test_web_role_can_select_django_migrations(self):
+        _pular_sem_postgres(self)
+        with _conectar_papel("rondimob_web") as conn:
+            linhas = conn.execute(
+                """
+                SELECT app, name
+                FROM public.django_migrations
+                WHERE app = 'contas' AND name = '0002_isolamento_da_conta'
+                """
+            ).fetchall()
+        self.assertEqual(linhas, [("contas", "0002_isolamento_da_conta")])
+
+
+class IsolamentoTransacaoTests(TransactionTestCase):
+    def test_area_keeps_conta_id_only_inside_the_request_transaction(self):
+        _pular_sem_postgres(self)
+        conta = Conta.objects.create_user(
+            email="ana-transacao@exemplo.com",
+            password=SENHA,
+            tipo=Conta.TIPO_CORRETOR,
+            nome="Ana Lima",
+        )
+        cliente = Client()
+        self.assertEqual(
+            cliente.post("/entrar/", {"email": conta.email, "senha": SENHA}).status_code,
+            302,
+        )
+        vistos = []
+
+        def wrapper(execute, sql, params, many, context):
+            if "contas_conta" in sql:
+                execute(
+                    "SELECT current_setting('app.conta_id', true)",
+                    None,
+                    False,
+                    context,
+                )
+                vistos.append(context["cursor"].fetchone()[0])
+            return execute(sql, params, many, context)
+
+        with connection.execute_wrapper(wrapper):
+            resposta = cliente.get("/area/")
+        self.assertEqual(resposta.status_code, 200)
+        self.assertTrue(vistos)
+        self.assertTrue(all(valor == str(conta.pk) for valor in vistos))
+
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_setting('app.conta_id', true)")
+                seguinte = cursor.fetchone()[0]
+        self.assertIn(seguinte, (None, ""))

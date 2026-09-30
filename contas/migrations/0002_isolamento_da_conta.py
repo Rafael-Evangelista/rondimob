@@ -56,6 +56,13 @@ def aplicar_isolamento(apps, schema_editor):
     )
     _executar(
         schema_editor,
+        """
+        GRANT SELECT ON TABLE public.django_migrations
+            TO rondimob_web, rondimob_worker
+        """,
+    )
+    _executar(
+        schema_editor,
         "ALTER TABLE public.contas_conta ENABLE ROW LEVEL SECURITY",
     )
     _executar(
@@ -103,6 +110,10 @@ def reverter_isolamento(apps, schema_editor):
     _executar(
         schema_editor,
         "REVOKE ALL ON TABLE public.django_session FROM rondimob_web",
+    )
+    _executar(
+        schema_editor,
+        "REVOKE ALL ON TABLE public.django_migrations FROM rondimob_web, rondimob_worker",
     )
 
 
