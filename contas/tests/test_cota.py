@@ -250,6 +250,8 @@ class CotaGratisTests(TestCase):
         for texto in PRECOS:
             self.assertContains(area, texto)
         self.assertContains(area, "Radares")
+        self.assertContains(area, "Ativar Padrão")
+        self.assertContains(area, "Ativar Plus")
         self.assertNotContains(area, "<li>")
         self.assertNotContains(area, "Último dia aberto")
         self.assertNotContains(area, "pesquisa restante")

@@ -8,9 +8,13 @@ from django.utils.http import urlsafe_base64_decode
 from django.views.decorators.http import require_POST
 
 from contas.cota import (
+    ativar_plano as gravar_plano,
+    nome_do_plano,
     nomes_de_radar,
+    plano_pago,
     pode_pesquisar,
     pesquisas_restantes,
+    resultados_gravados,
     ultimo_dia_aberto,
 )
 from contas.forms import (
@@ -84,18 +88,41 @@ def criar_conta(request):
     return render(request, "contas/criar_conta.html", {"form": form})
 
 
-def area(request):
+def area(request, aviso_personalizado=False):
     if not request.user.is_authenticated:
         return redirect("entrar")
     conta = request.user
+    contexto = {
+        "conta": conta,
+        "aviso_personalizado": aviso_personalizado,
+        "plano_pago": plano_pago(conta),
+    }
+    if contexto["plano_pago"]:
+        restantes = pesquisas_restantes(conta)
+        contexto["nome_do_plano"] = nome_do_plano(conta)
+        contexto["pesquisas_restantes"] = restantes
+        if restantes == 0:
+            contexto["resultados"] = resultados_gravados(conta)
+        return render(request, "contas/area.html", contexto)
     aberto = pode_pesquisar(conta)
-    contexto = {"conta": conta, "trial_aberto": aberto}
+    contexto["trial_aberto"] = aberto
     if aberto:
         contexto["pesquisas_restantes"] = pesquisas_restantes(conta)
         contexto["ultimo_dia"] = ultimo_dia_aberto(conta)
     else:
         contexto["radares"] = nomes_de_radar(conta)
     return render(request, "contas/area.html", contexto)
+
+
+@require_POST
+def ativar_plano(request):
+    if not request.user.is_authenticated:
+        return redirect("entrar")
+    plano = request.POST.get("plano") or ""
+    if plano in (Conta.PLANO_PADRAO, Conta.PLANO_PLUS):
+        gravar_plano(request.user, plano)
+        return redirect("area")
+    return redirect("area")
 
 
 def recuperar_senha(request):
