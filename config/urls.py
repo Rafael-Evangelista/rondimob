@@ -8,6 +8,11 @@ urlpatterns = [
     path("criar-conta/", views.criar_conta, name="criar_conta"),
     path("area/", views.area, name="area"),
     path("area/radares/novo/", radares_views.novo, name="novo_radar"),
+    path(
+        "area/radares/<uuid:radar_id>/",
+        radares_views.editar,
+        name="editar_radar",
+    ),
     path("area/plano/", views.ativar_plano, name="ativar_plano"),
     path("area/credito/", views.recarregar_credito, name="recarregar_credito"),
     path("entrar/", views.entrar, name="entrar"),

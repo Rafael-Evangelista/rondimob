@@ -19,6 +19,7 @@ from contas.cota import (
 )
 from contas.isolamento import definir_conta
 from contas.models import Conta
+from radares.models import Radar
 
 SENHA = "senha-segura"
 FUSO = ZoneInfo("America/Sao_Paulo")
@@ -258,12 +259,15 @@ class CotaGratisTests(TestCase):
         self.assertNotContains(area, "Último dia aberto")
         self.assertNotContains(area, "pesquisa restante")
 
-        with (
-            patch("django.utils.timezone.now", return_value=dia_15),
-            patch("contas.views.nomes_de_radar", return_value=["Radar Centro"]),
-        ):
+        radar = Radar.objects.create(
+            conta=bloqueada,
+            cidade="Santo André",
+            tipo="apartamento",
+            imobiliaria="centro",
+        )
+        with patch("django.utils.timezone.now", return_value=dia_15):
             com_nome = self.client.get("/area/")
-        self.assertContains(com_nome, "Radar Centro")
+        self.assertContains(com_nome, radar.rotulo)
         bloqueada.refresh_from_db()
         self.assertEqual(bloqueada.pesquisas_gratis_usadas, 0)
 

@@ -39,7 +39,7 @@ Open `http://localhost:8000/`. Signup is at `http://localhost:8000/criar-conta/`
 
 A new account's area shows the free trial: 10 searches left, and the last open day. The creation date in America/Sao_Paulo is day 1, and the last open day is 13 days later. Signup, login, logout, the public portal, and opening the area do not spend a search. After 10 searches, or on the following calendar day, the area shows the four plans and the radar names that already exist.
 
-One form at `/area/radares/novo/` creates a radar in the ABCD. The city has to be Santo André, São Bernardo do Campo, São Caetano do Sul, or Diadema. A second radar stays in the account's list. Creating a radar does not spend a search.
+One form at `/area/radares/novo/` creates a radar in the ABCD. The city has to be Santo André, São Bernardo do Campo, São Caetano do Sul, or Diadema. A second radar stays in the account's list. Creating a radar does not spend a search. An edit updates the same radar and does not spend a search. A city outside the ABCD leaves the stored city.
 
 Activating Padrão or Plus stores that plan on the account and the searches used in the current America/Sao_Paulo calendar month. It does not call Mercado Pago, Stripe, or any other payment gateway. Personalizado asks for contact and does not store a plan or a quota. A new month starts the quota again at 30 or 100; leftover searches do not carry over. With the month at zero and no credit, the area shows saved results and a new search is refused.
 
