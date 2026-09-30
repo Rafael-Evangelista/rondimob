@@ -2,7 +2,7 @@
 title: 'Editar radar'
 type: 'feature'
 created: '2026-09-30'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 baseline_commit: '124a8177bdd0e76f24343d3a384f571185acf35a'
 review_loop_iteration: 0
@@ -70,6 +70,17 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+- `medium` — the edit page heading is `Editar radar` and the submit button still says `Criar radar`. Route: patch, label the edit submit `Salvar` and keep `Criar radar` on the create form.
+- `false` — a GET of another account's id does not render that radar. `editar` loads `pk` and `conta=request.user` before it branches, so GET and POST both 404. The area list is also filtered by `conta`.
+- `false` — a blank city, a negative bound, or a max below the min does not write on edit. Those values fail `RadarForm`, and the view calls `save` only when the form is valid. Create tests already reject them.
+- `false` — a blank optional field clears the stored value. The text cleaners return an empty string, and the decimal fields are not required, so an empty price becomes null.
+- `false` — the README sentence matches the required note: the edit updates the same radar, does not spend a search, and a city outside the ABCD leaves the stored city.
+- `low` — two edit links and the closed-trial link are not asserted separately. Rejected: every area state uses the same list loop, and the open-trial test already checks the href.
+- `low` — `/area/` queries radars on its own while `nomes_de_radar` repeats the order. Rejected: both use `criado_em` then `id`, and unifying them is a new helper the page does not need.
+- `false` — a valid edit does not stamp a new `criado_em`. That field is not on the form and has no `auto_now`, so the loaded timestamp stays.
+- `false` — account A does not receive B's filters. `get_object_or_404` returns 404, which is what the spec requires. The invalid-city test already asserts the ABCD message on the re-rendered form.
+- edge-case layer returned no findings. verification-gap layer returned no findings.
 
 ## Design Notes
 
