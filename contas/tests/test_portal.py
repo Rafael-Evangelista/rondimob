@@ -2,16 +2,17 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import celery
 import django
 from django.conf import settings
 from django.contrib.staticfiles.finders import find
-from django.test import SimpleTestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from config import settings as production_settings
-from config.settings import DEFAULT_DATABASE_URL, database_from_url
+from config.settings import database_from_url, database_url_for_argv
 
 PORTAL_COPY = (
     "O rondimob monitora preços por região e imobiliárias concorrentes no ABCD, "
@@ -21,7 +22,7 @@ CLIENT_AREA_LINK = '<a href="/entrar/">Área do cliente</a>'
 STYLESHEET = "/static/contas/portal.css"
 
 
-class PortalTests(SimpleTestCase):
+class PortalTests(TestCase):
     def test_anonymous_portal_shows_products_plans_pack_and_prices(self):
         response = self.client.get("/")
 
@@ -98,11 +99,12 @@ class PortalTests(SimpleTestCase):
             production_settings.DATABASES["default"]["ENGINE"],
             "django.db.backends.postgresql",
         )
-        self.assertEqual(
-            settings.DATABASES["default"]["ENGINE"],
-            "django.db.backends.sqlite3",
-        )
-        self.assertIn("memory", settings.DATABASES["default"]["NAME"])
+        active = settings.DATABASES["default"]
+        if active["ENGINE"] == "django.db.backends.sqlite3":
+            self.assertIn("memory", active["NAME"])
+        else:
+            self.assertEqual(active["ENGINE"], "django.db.backends.postgresql")
+            self.assertNotIn(active["USER"], {"rondimob_web", "rondimob_worker"})
         self.assertEqual(
             database_from_url(
                 "postgres://corret%6Fr:p%40ss@db.example:5432/rondimob/"
@@ -118,7 +120,7 @@ class PortalTests(SimpleTestCase):
         )
         with self.assertRaises(ValueError):
             database_from_url("mysql://localhost/rondimob")
-        used_url = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
+        used_url = database_url_for_argv()
         expected = database_from_url(used_url)
         configured = production_settings.DATABASES["default"]
         self.assertEqual({key: configured[key] for key in expected}, expected)
@@ -127,6 +129,43 @@ class PortalTests(SimpleTestCase):
             production_settings.CELERY_BROKER_URL,
             "redis://localhost:6379/0",
         )
+
+    def test_database_url_follows_the_command(self):
+        from config.settings import (
+            OWNER_DATABASE_URL,
+            WEB_DATABASE_URL,
+            WORKER_DATABASE_URL,
+            database_url_for_argv,
+        )
+
+        env = os.environ.copy()
+        env.pop("DATABASE_URL", None)
+        with patch.dict(os.environ, env, clear=True):
+            self.assertEqual(
+                database_url_for_argv(["manage.py", "migrate"]),
+                OWNER_DATABASE_URL,
+            )
+            self.assertEqual(
+                database_url_for_argv(["manage.py", "makemigrations", "contas"]),
+                OWNER_DATABASE_URL,
+            )
+            self.assertEqual(
+                database_url_for_argv(["/tmp/celery", "-A", "config", "worker"]),
+                WORKER_DATABASE_URL,
+            )
+            self.assertEqual(
+                database_url_for_argv(["python", "-m", "celery", "worker"]),
+                WORKER_DATABASE_URL,
+            )
+            self.assertEqual(
+                database_url_for_argv(["manage.py", "runserver"]),
+                WEB_DATABASE_URL,
+            )
+        with patch.dict(os.environ, {"DATABASE_URL": "postgresql://explicit/rondimob"}):
+            self.assertEqual(
+                database_url_for_argv(["manage.py", "migrate"]),
+                "postgresql://explicit/rondimob",
+            )
 
     def test_celery_autodiscovers_the_recovery_task(self):
         import redis

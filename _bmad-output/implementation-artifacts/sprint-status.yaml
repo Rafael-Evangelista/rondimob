@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-29-2026 19:41
-last_updated: 09-30-2026 01:28
+last_updated: 09-30-2026 02:40
 project: rondimob
 project_key: NOKEY
 tracking_system: file-system
@@ -38,8 +38,8 @@ development_status:
   epic-1: in-progress
   1-1-ver-produtos-e-planos-no-portal: done
   1-2-criar-conta-de-corretor-ou-de-imobiliária: done
-  1-3-entrar-sair-e-recuperar-a-senha: review
-  1-4-uma-conta-não-lê-a-outra: backlog
+  1-3-entrar-sair-e-recuperar-a-senha: done
+  1-4-uma-conta-não-lê-a-outra: review
   1-5-usar-o-grátis-e-ver-o-bloqueio: backlog
   1-6-ativar-plano-pago: backlog
   1-7-recarregar-créditos: backlog
