@@ -9,6 +9,7 @@ MENSAGEM_CIDADE = (
     "Informe Santo André, São Bernardo do Campo, São Caetano do Sul ou Diadema."
 )
 MENSAGEM_FAIXA = "O máximo não pode ser menor que o mínimo."
+MENSAGEM_NEGATIVO = "Informe zero ou mais."
 
 _CIDADES = {
     "santo andre": "Santo André",
@@ -88,6 +89,10 @@ class RadarForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
+        for nome in ("preco_minimo", "preco_maximo", "area_minima", "area_maxima"):
+            valor = cleaned.get(nome)
+            if valor is not None and valor < 0:
+                self.add_error(nome, MENSAGEM_NEGATIVO)
         self._rejeitar_faixa(cleaned, "preco_minimo", "preco_maximo")
         self._rejeitar_faixa(cleaned, "area_minima", "area_maxima")
         return cleaned

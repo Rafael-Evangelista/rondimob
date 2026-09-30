@@ -211,6 +211,17 @@ class RadarFormTests(TestCase):
                 self.assertContains(resposta, 'name="cidade"')
                 self.assertEqual(Radar.objects.count(), 0)
 
+    def test_negative_price_and_area_create_nothing(self):
+        conta = _criar()
+        _entrar(self.client, conta)
+        resposta = self.client.post(
+            "/area/radares/novo/",
+            {**EXEMPLO, "preco_minimo": "-1", "area_minima": "-1"},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Informe zero ou mais.")
+        self.assertEqual(Radar.objects.count(), 0)
+
     def test_only_city_is_required_and_blanks_are_skipped_in_the_label(self):
         conta = _criar()
         _entrar(self.client, conta)

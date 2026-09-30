@@ -67,7 +67,7 @@ def nomes_de_radar(conta):
 
     return [
         radar.rotulo
-        for radar in Radar.objects.filter(conta=conta).order_by("criado_em")
+        for radar in Radar.objects.filter(conta=conta).order_by("criado_em", "id")
     ]
 
 

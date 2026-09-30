@@ -71,6 +71,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
+        ("contas", "0002_isolamento_da_conta"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
