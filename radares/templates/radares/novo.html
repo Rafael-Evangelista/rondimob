@@ -1,0 +1,63 @@
+{% extends "contas/base.html" %}
+
+{% block title %}Novo radar — rondimob{% endblock %}
+
+{% block content %}
+<main>
+  <h1>Novo radar</h1>
+  <form method="post" action="/area/radares/novo/">
+    {% csrf_token %}
+    <p>
+      <label for="{{ form.imobiliaria.id_for_label }}">Imobiliária anunciante</label>
+      {{ form.imobiliaria }}
+      {{ form.imobiliaria.errors }}
+    </p>
+    <p>
+      <label for="{{ form.cidade.id_for_label }}">Cidade</label>
+      {{ form.cidade }}
+      {{ form.cidade.errors }}
+    </p>
+    <p>
+      <label for="{{ form.bairro.id_for_label }}">Bairro</label>
+      {{ form.bairro }}
+      {{ form.bairro.errors }}
+    </p>
+    <p>
+      <label for="{{ form.tipo.id_for_label }}">Tipo</label>
+      {{ form.tipo }}
+      {{ form.tipo.errors }}
+    </p>
+    <p>
+      <label for="{{ form.preco_minimo.id_for_label }}">Preço mínimo</label>
+      {{ form.preco_minimo }}
+      {{ form.preco_minimo.errors }}
+    </p>
+    <p>
+      <label for="{{ form.preco_maximo.id_for_label }}">Preço máximo</label>
+      {{ form.preco_maximo }}
+      {{ form.preco_maximo.errors }}
+    </p>
+    <p>
+      <label for="{{ form.area_minima.id_for_label }}">Área mínima</label>
+      {{ form.area_minima }}
+      {{ form.area_minima.errors }}
+    </p>
+    <p>
+      <label for="{{ form.area_maxima.id_for_label }}">Área máxima</label>
+      {{ form.area_maxima }}
+      {{ form.area_maxima.errors }}
+    </p>
+    <p>
+      <label for="{{ form.quartos_minimos.id_for_label }}">Quartos mínimos</label>
+      {{ form.quartos_minimos }}
+      {{ form.quartos_minimos.errors }}
+    </p>
+    <p>
+      <label for="{{ form.vagas_minimas.id_for_label }}">Vagas mínimas</label>
+      {{ form.vagas_minimas }}
+      {{ form.vagas_minimas.errors }}
+    </p>
+    <button type="submit">Criar radar</button>
+  </form>
+</main>
+{% endblock %}
