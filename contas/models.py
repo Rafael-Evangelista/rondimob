@@ -3,6 +3,8 @@ import uuid
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models, transaction
+from django.db.models.functions import Now
+from django.utils import timezone
 
 from contas.isolamento import definir_conta
 
@@ -47,6 +49,8 @@ class Conta(AbstractBaseUser):
     razao_social = models.CharField(max_length=255, blank=True, default="")
     cnpj = models.CharField(max_length=14, blank=True, default="")
     responsavel = models.CharField(max_length=255, blank=True, default="")
+    criada_em = models.DateTimeField(default=timezone.now, db_default=Now())
+    pesquisas_gratis_usadas = models.PositiveIntegerField(default=0, db_default=0)
 
     objects = ContaManager()
 
