@@ -16,7 +16,17 @@
   {% else %}
   <p>{{ pesquisas_restantes }} pesquisas restantes</p>
   {% endif %}
-  {% if pesquisas_restantes == 0 %}
+  {% if saldo_credito == 1 %}
+  <p>1 crédito</p>
+  {% else %}
+  <p>{{ saldo_credito }} créditos</p>
+  {% endif %}
+  <p>R$ 47 por 10 pesquisas</p>
+  <form method="post" action="/area/credito/">
+    {% csrf_token %}
+    <button type="submit">Recarregar</button>
+  </form>
+  {% if pesquisas_restantes == 0 and saldo_credito == 0 %}
   <section aria-labelledby="resultados">
     <h2 id="resultados">Resultados</h2>
     <ul>
@@ -36,6 +46,7 @@
   </form>
   <p>O plano Personalizado é por contato.</p>
   {% elif trial_aberto %}
+  <p>Ative um plano para recarregar.</p>
   {% if pesquisas_restantes == 1 %}
   <p>1 pesquisa restante</p>
   {% else %}
@@ -52,6 +63,7 @@
   </form>
   <p>O plano Personalizado é por contato.</p>
   {% else %}
+  <p>Ative um plano para recarregar.</p>
   <section aria-labelledby="planos">
     <h2 id="planos">Planos</h2>
     <article>

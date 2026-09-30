@@ -1,19 +1,22 @@
 """Search quota.
 
 ``aceitar_pesquisa`` is the only writer that spends a search. A paid plan
-spends ``pesquisas_mes_usadas``. An account with no plan still spends
-``pesquisas_gratis_usadas``. ``ativar_plano`` stores Padrão or Plus and does
+spends the month first and spends credit only after that quota is zero. An
+account with no plan still spends ``pesquisas_gratis_usadas`` and never spends
+credit. ``ativar_plano`` and ``recarregar_credito`` change stored state and do
 not call a payment gateway.
 """
 
 from datetime import timedelta
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from contas.isolamento import definir_conta
-from contas.models import Conta
+from contas.models import Conta, Credito
 
 # Named here on purpose. The window is calendar days in this zone.
 FUSO = ZoneInfo("America/Sao_Paulo")
@@ -27,6 +30,8 @@ NOMES_DE_PLANO = {
     Conta.PLANO_PADRAO: "Padrão",
     Conta.PLANO_PLUS: "Plus",
 }
+PACOTE_DE_PESQUISAS = 10
+PRECO_DO_PACOTE = Decimal("47.00")
 
 
 def data_de_criacao(conta):
@@ -66,9 +71,17 @@ def resultados_gravados(conta):
     return []
 
 
+def saldo_credito(conta):
+    """Sum of remaining units. Credit stays until those units are spent."""
+    total = Credito.objects.filter(conta=conta).aggregate(total=Sum("restante"))["total"]
+    return total or 0
+
+
 def pode_pesquisar(conta):
     if plano_pago(conta):
-        return _usadas_no_mes(conta) < PESQUISAS_DO_PLANO[conta.plano]
+        if _usadas_no_mes(conta) < PESQUISAS_DO_PLANO[conta.plano]:
+            return True
+        return saldo_credito(conta) > 0
     return _aberto(conta)
 
 
@@ -91,10 +104,27 @@ def aceitar_pesquisa(conta):
         atual = Conta.objects.select_for_update().get(pk=conta.pk)
         if plano_pago(atual):
             aceita = _gastar_mes(atual)
+            if not aceita:
+                aceita = _gastar_credito(atual)
         else:
             aceita = _gastar_gratis(atual)
         _copiar_cota(conta, atual)
         return aceita
+
+
+def recarregar_credito(conta):
+    """Store one package of 10 searches at R$ 47. Paid plans only."""
+    with transaction.atomic():
+        definir_conta(conta.pk)
+        atual = Conta.objects.select_for_update().get(pk=conta.pk)
+        if not plano_pago(atual):
+            return False
+        Credito.objects.create(
+            conta=atual,
+            preco=PRECO_DO_PACOTE,
+            restante=PACOTE_DE_PESQUISAS,
+        )
+        return True
 
 
 def ativar_plano(conta, plano):
@@ -132,6 +162,20 @@ def _gastar_mes(atual):
         return False
     atual.pesquisas_mes_usadas += 1
     atual.save(update_fields=["pesquisas_mes_usadas", "mes_da_cota"])
+    return True
+
+
+def _gastar_credito(atual):
+    pacote = (
+        Credito.objects.select_for_update()
+        .filter(conta=atual, restante__gt=0)
+        .order_by("criado_em", "id")
+        .first()
+    )
+    if pacote is None:
+        return False
+    pacote.restante -= 1
+    pacote.save(update_fields=["restante"])
     return True
 
 

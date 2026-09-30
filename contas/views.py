@@ -14,7 +14,9 @@ from contas.cota import (
     plano_pago,
     pode_pesquisar,
     pesquisas_restantes,
+    recarregar_credito as gravar_credito,
     resultados_gravados,
+    saldo_credito,
     ultimo_dia_aberto,
 )
 from contas.forms import (
@@ -99,9 +101,11 @@ def area(request, aviso_personalizado=False):
     }
     if contexto["plano_pago"]:
         restantes = pesquisas_restantes(conta)
+        saldo = saldo_credito(conta)
         contexto["nome_do_plano"] = nome_do_plano(conta)
         contexto["pesquisas_restantes"] = restantes
-        if restantes == 0:
+        contexto["saldo_credito"] = saldo
+        if restantes == 0 and saldo == 0:
             contexto["resultados"] = resultados_gravados(conta)
         return render(request, "contas/area.html", contexto)
     aberto = pode_pesquisar(conta)
@@ -122,6 +126,14 @@ def ativar_plano(request):
     if plano in (Conta.PLANO_PADRAO, Conta.PLANO_PLUS):
         gravar_plano(request.user, plano)
         return redirect("area")
+    return redirect("area")
+
+
+@require_POST
+def recarregar_credito(request):
+    if not request.user.is_authenticated:
+        return redirect("entrar")
+    gravar_credito(request.user)
     return redirect("area")
 
 

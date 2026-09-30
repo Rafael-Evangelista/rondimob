@@ -1,6 +1,7 @@
 import importlib.util
 import uuid
 from contextlib import contextmanager
+from decimal import Decimal
 
 import psycopg
 from django.conf import settings
@@ -56,7 +57,28 @@ def _apagar(ids):
         return
     with _conectar_dono() as conn:
         for conta_id in ids:
+            conn.execute(
+                "DELETE FROM contas_credito WHERE conta_id = %s",
+                (conta_id,),
+            )
             conn.execute("DELETE FROM contas_conta WHERE id = %s", (conta_id,))
+
+
+def _inserir_credito(conn, conta_id, restante):
+    credito_id = uuid.uuid4()
+    with conn.transaction():
+        conn.execute(
+            "SELECT set_config('app.conta_id', %s, true)",
+            (str(conta_id),),
+        )
+        conn.execute(
+            """
+            INSERT INTO contas_credito (id, preco, restante, criado_em, conta_id)
+            VALUES (%s, 47.00, %s, now(), %s)
+            """,
+            (credito_id, restante, conta_id),
+        )
+    return credito_id
 
 
 def _inserir(conn, nome, email):
@@ -484,7 +506,7 @@ class IsolamentoPolicyTests(TestCase):
             )
             self.assertEqual(
                 [linha[0] for linha in cursor.fetchall()],
-                ["contas_conta"],
+                ["contas_conta", "contas_credito"],
             )
             cursor.execute(
                 """
@@ -514,6 +536,35 @@ class IsolamentoPolicyTests(TestCase):
         self.assertIn("app.login_email", usando)
         self.assertIn("app.conta_id", checagem)
         self.assertNotIn("app.login_email", checagem)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT c.relrowsecurity, c.relforcerowsecurity
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relname = 'contas_credito'
+                """
+            )
+            self.assertEqual(cursor.fetchone(), (True, True))
+            cursor.execute(
+                """
+                SELECT pol.polname,
+                       pg_get_expr(pol.polqual, pol.polrelid),
+                       pg_get_expr(pol.polwithcheck, pol.polrelid)
+                FROM pg_policy pol
+                JOIN pg_class c ON c.oid = pol.polrelid
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relname = 'contas_credito'
+                """
+            )
+            politicas_credito = cursor.fetchall()
+        self.assertEqual(len(politicas_credito), 1)
+        nome_credito, usando_credito, checagem_credito = politicas_credito[0]
+        self.assertEqual(nome_credito, "conta_isola")
+        self.assertIn("app.conta_id", usando_credito)
+        self.assertNotIn("app.login_email", usando_credito)
+        self.assertIn("app.conta_id", checagem_credito)
+        self.assertNotIn("app.login_email", checagem_credito)
         self.assertIsNone(importlib.util.find_spec("django_tenants"))
         self.assertNotIn("django_tenants", settings.INSTALLED_APPS)
         with connection.cursor() as cursor:
@@ -544,10 +595,87 @@ class IsolamentoPolicyTests(TestCase):
                           AND c.relname = 'contas_conta'
                         """
                     ).fetchone()
+                    dono_credito = conn.execute(
+                        """
+                        SELECT pg_get_userbyid(c.relowner)
+                        FROM pg_class c
+                        JOIN pg_namespace n ON n.oid = c.relnamespace
+                        WHERE n.nspname = 'public' AND c.relname = 'contas_credito'
+                        """
+                    ).fetchone()[0]
+                    privilegios_credito = {
+                        linha[0]
+                        for linha in conn.execute(
+                            """
+                            SELECT privilege_type
+                            FROM information_schema.role_table_grants
+                            WHERE grantee = %s
+                              AND table_schema = 'public'
+                              AND table_name = 'contas_credito'
+                            """,
+                            (papel,),
+                        ).fetchall()
+                    }
                 self.assertEqual(papel_atual, papel)
                 self.assertFalse(superuser)
                 self.assertFalse(bypass)
                 self.assertNotEqual(dono, papel)
+                self.assertNotEqual(dono_credito, papel)
+                self.assertTrue(
+                    {"SELECT", "INSERT", "UPDATE", "DELETE"} <= privilegios_credito
+                )
+
+    def test_web_role_sees_only_its_credit(self):
+        _pular_sem_postgres(self)
+        ids = []
+        conn = _conectar_papel("rondimob_web")
+        try:
+            conta_a = _inserir(conn, "Ana", "credito-a@exemplo.com")
+            conta_b = _inserir(conn, "Bruno", "credito-b@exemplo.com")
+            ids.extend((conta_a, conta_b))
+            _inserir_credito(conn, conta_a, 10)
+            _inserir_credito(conn, conta_b, 4)
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_a),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        """
+                        SELECT conta_id::text, restante, preco
+                        FROM contas_credito
+                        """
+                    ).fetchall(),
+                    [(str(conta_a), 10, Decimal("47.00"))],
+                )
+                alteradas = conn.execute(
+                    """
+                    UPDATE contas_credito
+                    SET restante = 1
+                    WHERE conta_id = %s
+                    """,
+                    (conta_b,),
+                ).rowcount
+                self.assertEqual(alteradas, 0)
+                self.assertEqual(
+                    conn.execute("SELECT restante FROM contas_credito").fetchall(),
+                    [(10,)],
+                )
+            with conn.transaction():
+                conn.execute(
+                    "SELECT set_config('app.conta_id', %s, true)",
+                    (str(conta_b),),
+                )
+                self.assertEqual(
+                    conn.execute(
+                        "SELECT conta_id::text, restante FROM contas_credito"
+                    ).fetchall(),
+                    [(str(conta_b), 4)],
+                )
+        finally:
+            conn.close()
+            _apagar(ids)
 
     def test_login_sets_login_email_before_the_query(self):
         _pular_sem_postgres(self)

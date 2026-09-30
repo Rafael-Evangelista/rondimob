@@ -77,3 +77,21 @@ class Conta(AbstractBaseUser):
         if self.tipo == self.TIPO_IMOBILIARIA:
             return self.razao_social
         return self.nome
+
+
+class Credito(models.Model):
+    """One bought package. The balance is the sum of ``restante``, not a column on ``Conta``."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conta = models.ForeignKey(Conta, on_delete=models.CASCADE, related_name="creditos")
+    preco = models.DecimalField(max_digits=8, decimal_places=2)
+    restante = models.PositiveIntegerField()
+    criado_em = models.DateTimeField(default=timezone.now, db_default=Now())
+
+    def save(self, **kwargs):
+        if self.id is None:
+            self.id = uuid.uuid4()
+        using = kwargs.get("using")
+        with transaction.atomic(using=using):
+            definir_conta(self.conta_id, using=using)
+            super().save(**kwargs)
