@@ -45,6 +45,31 @@ class VivaRealTests(TestCase):
         self.assertEqual(self.client.get("/area/").status_code, 302)
         self.assertEqual(Anuncio.objects.count(), 0)
 
+        conta = Conta.objects.create_user(
+            email="ana-pagina@exemplo.com",
+            password=SENHA,
+            tipo=Conta.TIPO_CORRETOR,
+            nome="Ana Lima",
+        )
+        self.client.post("/entrar/", {"email": conta.email, "senha": SENHA})
+        self.client.get("/area/")
+        self.client.post(
+            "/area/radares/novo/",
+            {
+                "cidade": "Santo André",
+                "imobiliaria": "Alfa",
+                "tipo": "apartamento",
+                "preco_minimo": "300000",
+                "preco_maximo": "800000",
+                "area_minima": "60",
+                "quartos_minimos": "2",
+                "vagas_minimas": "1",
+                "bairro": "",
+                "area_maxima": "",
+            },
+        )
+        self.assertEqual(Anuncio.objects.count(), 0)
+
         saida = io.StringIO()
         with redirect_stdout(saida):
             gravados = coletar_viva_real()
