@@ -67,16 +67,18 @@ brew services start redis
 In another terminal, from this repository. The worker connects as `rondimob_worker` at `postgresql://rondimob_worker:dev-only-worker@127.0.0.1/rondimob`:
 
 ```bash
-uv run celery -A config worker -Q celery,zap,viva-real --loglevel=info
+uv run celery -A config worker -Q celery,zap,viva-real,olx --loglevel=info
 ```
 
 The ZAP task `coleta.tasks.coletar_zap` uses the queue `zap`. With no payload argument it reads `coleta/fixtures/zap-exemplo.json` and upserts that recorded listing. It does not call ZAP, Viva Real, OLX, or any other site. Live access waits until Rafael chooses how ZAP may be read.
 
 The Viva Real task `coleta.tasks.coletar_viva_real` uses the queue `viva-real`. With no payload argument it reads `coleta/fixtures/viva-real-exemplo.json` and upserts that recorded listing. It does not call the site. A failure on one queue does not cancel the other. Live access waits until Rafael chooses how Viva Real may be read.
 
+The OLX task `coleta.tasks.coletar_olx` uses the queue `olx`. With no payload argument it reads `coleta/fixtures/olx-exemplo.json` and upserts that recorded listing. It does not call the site. A failure on one queue does not cancel the others. Live access waits until Rafael chooses how OLX may be read.
+
 ## Tests
 
-`uv run pytest` loads `config.test_settings`, an in-memory SQLite overlay. It covers the portal, signup, session, free-trial pages, plan activation, credit reload, creating a radar, and storing a recorded ZAP payload and a recorded Viva Real payload. PostgreSQL is not required, and neither is Redis. Isolation tests are skipped, including the free-search counter, the plan, the credit balance, and the radar. The account-context helper does not call `set_config` on SQLite. The application engine in `config.settings` stays PostgreSQL. Pytest mocks the Celery `delay` call and runs the task function directly. The ZAP tests call `coletar_zap` in process with the fixture file. The Viva Real tests call `coletar_viva_real` in process with its fixture file. They do not open the broker and they do not call the site.
+`uv run pytest` loads `config.test_settings`, an in-memory SQLite overlay. It covers the portal, signup, session, free-trial pages, plan activation, credit reload, creating a radar, and storing a recorded ZAP payload, a recorded Viva Real payload, and a recorded OLX payload. PostgreSQL is not required, and neither is Redis. Isolation tests are skipped, including the free-search counter, the plan, the credit balance, and the radar. The account-context helper does not call `set_config` on SQLite. The application engine in `config.settings` stays PostgreSQL. Pytest mocks the Celery `delay` call and runs the task function directly. The ZAP tests call `coletar_zap` in process with the fixture file. The Viva Real tests call `coletar_viva_real` in process with its fixture file. The OLX tests call `coletar_olx` in process with its fixture file. They do not open the broker and they do not call the site.
 
 `uv run pytest --ds config.postgres_settings` runs the same suite, including isolation, against the local PostgreSQL server. It needs the `rondimob` database and the owner role from the install steps. The Django connection for that command is the table owner. The isolation tests also connect as `rondimob_web` and `rondimob_worker` and check that one account cannot read the other. The free-search counter check, the plan check, the credit check, and the radar check connect as `rondimob_web`.
 

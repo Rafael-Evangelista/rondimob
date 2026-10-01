@@ -138,4 +138,5 @@ CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_TASK_ROUTES = {
     "coleta.tasks.coletar_zap": {"queue": "zap"},
     "coleta.tasks.coletar_viva_real": {"queue": "viva-real"},
+    "coleta.tasks.coletar_olx": {"queue": "olx"},
 }

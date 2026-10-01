@@ -13,6 +13,7 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "zap-exemplo.json"
 FIXTURE_VIVA_REAL = (
     Path(__file__).resolve().parent / "fixtures" / "viva-real-exemplo.json"
 )
+FIXTURE_OLX = Path(__file__).resolve().parent / "fixtures" / "olx-exemplo.json"
 
 
 @shared_task(name="coleta.tasks.coletar_zap", queue="zap")
@@ -42,6 +43,21 @@ def coletar_viva_real(payloads=None):
         print(f"coleta viva-real falha: {exc}", flush=True)
         return None
     print(f"coleta viva-real gravou {len(itens)}", flush=True)
+    return len(itens)
+
+
+@shared_task(name="coleta.tasks.coletar_olx", queue="olx")
+def coletar_olx(payloads=None):
+    """Upsert recorded OLX payloads. With no argument, read the fixture file."""
+    try:
+        itens = _carregar(payloads, FIXTURE_OLX)
+        for item in itens:
+            gravar(analisar(item, "olx"))
+    except Exception as exc:
+        Falha.objects.create(fonte="olx", mensagem=str(exc))
+        print(f"coleta olx falha: {exc}", flush=True)
+        return None
+    print(f"coleta olx gravou {len(itens)}", flush=True)
     return len(itens)
 
 
