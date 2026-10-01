@@ -7,7 +7,7 @@ class ErroDePayload(Exception):
     """The payload cannot be stored."""
 
 
-def analisar(payload):
+def analisar(payload, fonte):
     """Return the normalized listing fields for one recorded object."""
     if not isinstance(payload, dict):
         raise ErroDePayload("payload inválido")
@@ -18,7 +18,7 @@ def analisar(payload):
         raise ErroDePayload("payload sem preço")
     externo = payload.get("identificador_externo", payload.get("id"))
     return {
-        "fonte": "zap",
+        "fonte": fonte,
         "identificador_externo": str(externo or "").strip(),
         "url": url,
         "titulo": _limpo(payload.get("titulo")),

@@ -1,0 +1,16 @@
+{
+  "id": "viva-real-exemplo-1",
+  "url": "https://exemplo.invalid/anuncio/viva-real-exemplo-1",
+  "preco": "650 mil",
+  "area": 72,
+  "quartos": 3,
+  "banheiros": 2,
+  "vagas": 1,
+  "cidade": "  São Bernardo do Campo  ",
+  "bairro": " Centro ",
+  "tipo": " Casa ",
+  "imobiliaria": " Imobiliária Beta ",
+  "titulo": "Casa no Centro",
+  "endereco": "Rua Gravada, 20",
+  "descricao": "Anúncio gravado a partir do arquivo de exemplo da Viva Real."
+}
