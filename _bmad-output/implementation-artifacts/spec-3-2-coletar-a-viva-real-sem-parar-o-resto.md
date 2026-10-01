@@ -2,7 +2,7 @@
 title: 'Coletar a Viva Real sem parar o resto'
 type: 'feature'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 baseline_commit: '70cd62971993db2f76ee01c561439f960a1968f7'
 review_loop_iteration: 0
@@ -71,6 +71,25 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+- BH1 — false — the fixture is one object. A finished earlier row is not a half-written listing, and this story does not restructure the existing batch `try`.
+- BH2 — false — both tasks pass a short literal (`zap` or `viva-real`). They do not take `fonte` from the JSON.
+- BH3 — false — `test_fixture_grava_um_anuncio_e_um_preco` asserts fonte `viva-real` after `coletar_viva_real()`, which passes that literal.
+- BH4 — false — the unchanged upsert already keeps other fields on an equal price in `anuncios/tests/test_gravar.py`.
+- BH5 — false — the empty-id URL key is already covered by `test_sem_id_a_mesma_url_nao_cria_outro` and `test_dois_ids_vazios_com_urls_diferentes_criam_dois`. Fonte is a column in that lookup.
+- BH6 — false — a failed price insert rolls back inside unchanged `gravar`, covered by `test_erro_nao_deixa_anuncio_pela_metade`.
+- BH7 — false — the failure handler is inside `coletar_viva_real`, and the quota test rejects `cota` in that source.
+- BH8 — low — the denylist does not name every HTTP client. Rejected: the success path patches `socket`, and these modules do not import a client.
+- BH9 — false — returning without raising is the frozen contract, so one recorded failure does not crash the worker.
+- EH1 — false — same batch prefix as BH1 for ZAP.
+- EH2 — false — same batch prefix as BH1 for Viva Real.
+- EH3 — false — if writing `Falha` itself fails, that error should surface. Swallowing it would hide a down database.
+- EH4 — false — same as EH3 for Viva Real.
+- EH5 — low — a failed `print` after a successful upsert would raise. Rejected: stdout failure is not a path this story meets.
+- EH6 — low — same as EH5 for Viva Real.
+- VG1 — medium — an anonymous `GET /area/` only redirects, so a call after login would not run. The source-text scan does not count. Pre-verified. Patch: log in, open the area, post a radar, and assert no listing.
+
+Routed to patch: VG1. No intent gap and no bad spec.
 
 ## Design Notes
 

@@ -51,9 +51,14 @@ class VivaRealTests(TestCase):
             tipo=Conta.TIPO_CORRETOR,
             nome="Ana Lima",
         )
-        self.client.post("/entrar/", {"email": conta.email, "senha": SENHA})
-        self.client.get("/area/")
-        self.client.post(
+        entrada = self.client.post(
+            "/entrar/",
+            {"email": conta.email, "senha": SENHA},
+        )
+        self.assertEqual(entrada.status_code, 302)
+        area = self.client.get("/area/")
+        self.assertEqual(area.status_code, 200)
+        radar = self.client.post(
             "/area/radares/novo/",
             {
                 "cidade": "Santo André",
@@ -68,6 +73,7 @@ class VivaRealTests(TestCase):
                 "area_maxima": "",
             },
         )
+        self.assertEqual(radar.status_code, 302)
         self.assertEqual(Anuncio.objects.count(), 0)
 
         saida = io.StringIO()
