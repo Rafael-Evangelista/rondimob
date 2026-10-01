@@ -2,7 +2,7 @@
 title: 'Coletar a OLX sem parar o resto'
 type: 'feature'
 created: '2026-10-01'
-status: 'in-progress'
+status: 'done'
 route: 'dispatch'
 baseline_commit: '8131938d688d01deeb664470cb960467d29f0684'
 review_loop_iteration: 0
@@ -71,6 +71,19 @@ context:
 ## Spec Change Log
 
 ## Review Triage Log
+
+- BH1 — false — the fixture is one object. A finished earlier row is not a half-written listing, and this story does not restructure the existing batch `try`.
+- BH2 — false — the empty-id URL key is already covered by `test_sem_id_a_mesma_url_nao_cria_outro` and `test_dois_ids_vazios_com_urls_diferentes_criam_dois`. OLX uses that same `gravar`.
+- BH3 — false — `"650000"` is already the same numeric in `test_tres_textos_de_preco_sao_o_mesmo_numero`. OLX calls that same parser. The OLX repeat uses `"R$ 650.000"` and `"650 mil"`.
+- BH4 — false — the unchanged upsert already keeps other fields on an equal price in `anuncios/tests/test_gravar.py`.
+- BH5 — false — `test_zap_e_viva_real_falham_e_olx_grava` fails both siblings and OLX still stores. `test_olx_falha_e_as_outras_filas_gravam` stores ZAP and Viva Real after OLX fails and checks `GET /`.
+- BH6 — false — a failed price insert rolls back inside unchanged `gravar`, covered by `test_erro_nao_deixa_anuncio_pela_metade`.
+- BH7 — low — the older Viva Real sentence says "the other" in the singular. Rejected: the new OLX paragraph says a failure on one queue does not cancel the others, which is the README change this story requires.
+- BH8 — low — the denylist does not name every HTTP client. Rejected: the success path patches `socket`, and these modules do not import a client.
+- EH — no findings.
+- VG — no verification gaps.
+
+No patch, no defer, no intent gap, and no bad spec.
 
 ## Design Notes
 
