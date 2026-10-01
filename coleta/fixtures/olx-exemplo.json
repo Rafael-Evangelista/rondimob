@@ -1,0 +1,16 @@
+{
+  "id": "olx-exemplo-1",
+  "url": "https://exemplo.invalid/anuncio/olx-exemplo-1",
+  "preco": "R$ 650.000",
+  "area": 85,
+  "quartos": 2,
+  "banheiros": 1,
+  "vagas": 2,
+  "cidade": "  São Caetano do Sul  ",
+  "bairro": " Fundação ",
+  "tipo": " Apartamento ",
+  "imobiliaria": " Imobiliária Gama ",
+  "titulo": "Apartamento na Fundação",
+  "endereco": "Rua Gravada, 30",
+  "descricao": "Anúncio gravado a partir do arquivo de exemplo da OLX."
+}
